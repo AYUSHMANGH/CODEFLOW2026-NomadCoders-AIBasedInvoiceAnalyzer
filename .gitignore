@@ -1,0 +1,28 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Local builds
+dist/
+**/dist/
+build/
+**/build/
+
+# Local uploads
+uploads/
+**/uploads/
+
+# Environment configurations and keys
+.env
+.env.local
+.env.*.local
+*.log
+
+# Editor configurations and OS files
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# TS build caches
+*.tsbuildinfo
