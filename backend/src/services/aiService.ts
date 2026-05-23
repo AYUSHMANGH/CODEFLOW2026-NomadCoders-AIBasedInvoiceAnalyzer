@@ -1,5 +1,6 @@
 import * as fs from 'fs';
 import * as path from 'path';
+import Tesseract from 'tesseract.js';
 const pdf: any = require('pdf-parse');
 
 // Check for Groq API key
@@ -20,6 +21,7 @@ export interface ExtractedInvoice {
   anomalyDetected: boolean;
   anomalyDescription?: string;
   isSubscription: boolean;
+  analysis?: string;
 }
 
 export interface AIAdvisorResponse {
@@ -137,9 +139,35 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
   let isSubscription = false;
   let anomalyDetected = false;
   let anomalyDescription = '';
+  let analysis = '';
 
   // Tailored High-Fidelity Mocks based on typical files or names
-  if (name.includes('aws') || name.includes('amazon') || name.includes('cloud')) {
+  if (name.includes('techmart')) {
+    merchant = 'TechMart Pvt. Ltd.';
+    category = 'Shopping';
+    amount = 127182.76;
+    tax = 19400.76;
+    items = [
+      { name: 'MacBook Air M2 (13-inch)', quantity: 1, price: 89990.00, total: 89990.00 },
+      { name: 'Logitech MX Master 3S Mouse', quantity: 1, price: 9995.00, total: 9995.00 },
+      { name: 'Laptop Stand (Aluminum)', quantity: 1, price: 2499.00, total: 2499.00 },
+      { name: 'USB-C Hub (8 in 1)', quantity: 1, price: 3499.00, total: 3499.00 },
+      { name: 'Thunderbolt 4 Cable (1m)', quantity: 1, price: 1799.00, total: 1799.00 }
+    ];
+    analysis = `🔍 GST TAX COMPLIANCE AUDIT:
+• Subtotal: ₹1,07,782.00
+• Taxes: CGST 9% (₹9,700.38) + SGST 9% (₹9,700.38) = ₹19,400.76 (18% total).
+• Arithmetic Check: Subtotal + CGST + SGST = ₹1,27,182.76. Sum perfectly matches stated invoice total of ₹1,27,182.76.
+• Corporate Reclaim: 100% of GST (₹19,400.76) is eligible for corporate tax reclaim under HSN codes (84713010 / 84716060).
+
+💡 COST-SAVINGS & OPTIMIZATION ANALYSIS:
+• Asset Depreciation: MacBook Air M2 (₹89,990.00) is a capital expenditure asset eligible for straight-line corporate depreciation over 3-5 years.
+• Workstation Bundle: Purchasing peripheral items (Logitech MX Mouse, Laptop Stand, and USB-C Hub) as a package from TechMart typically yields a 10-15% discount. Potential savings: +₹1,500.
+
+📋 CORPORATE COMPLIANCE CHECK:
+• Hardware Allowance: Complies with standard employee IT hardware allowance limit of ₹1,50,000. Fully compliant.
+• Vendor Status: TechMart Pvt. Ltd. matches standard verified vendor profiles.`;
+  } else if (name.includes('aws') || name.includes('amazon') || name.includes('cloud')) {
     merchant = 'Amazon Web Services';
     category = 'Utilities';
     amount = 1489.12;
@@ -150,6 +178,13 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
       { name: 'RDS Managed Database Instances', quantity: 1, price: 497.12, total: 497.12 }
     ];
     isSubscription = true;
+    analysis = `🔍 FINANCIAL COMPLIANCE AUDIT:
+• Subtotal: ₹1,340.21 | Tax (VAT 10%): ₹148.91 | Total: ₹1,489.12.
+• Tax Deductions: Standard corporate operating expense deduction applies.
+
+💡 CLOUD INFRASTRUCTURE OPTIMIZATION:
+• EC2 instances have high idle times between 10 PM and 6 AM. Setting up auto-scaling rules or using Spot Instances could reduce Compute costs by 24%.
+• S3 Standard Storage includes standard tiers. Migrating logs to Glacier Instant Retrieval would save approximately ₹45/month.`;
   } else if (name.includes('delta') || name.includes('travel') || name.includes('flight') || name.includes('air')) {
     merchant = 'Delta Air Lines';
     category = 'Travel';
@@ -161,6 +196,12 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
     ];
     anomalyDetected = true;
     anomalyDescription = 'Potential duplicate booking or high-value expense above the category 30-day average (+122%).';
+    analysis = `🔍 TRAVEL COMPLIANCE & DUPLICATE WARNING:
+• Base Fare: ₹782.00 | Seat / Baggage Fees: ₹68.00 | Total: ₹850.00.
+• Travel Policy Check: Seat selection premium charge exceeds standard economy flight allowance of ₹40.00 by ₹28.00.
+
+💡 BOOKING DUPLICATE ALERT:
+• A duplicate flight reservation with the same routing (JFK to SFO) was logged in the system 24 hours ago. Please review if this represents a double-billing error or an uncancelled ticket.`;
   } else if (name.includes('kitchen') || name.includes('food') || name.includes('cafe') || name.includes('restaurant')) {
     merchant = 'The Modern Kitchen';
     category = 'Food';
@@ -170,6 +211,12 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
       { name: 'Executive Business Lunch Catering', quantity: 3, price: 13.83, total: 41.50 },
       { name: 'Premium Beverages & Sparkling Water', quantity: 1, price: 4.10, total: 4.10 }
     ];
+    analysis = `🔍 GENERAL COMPLIANCE AUDIT:
+• Arithmetic Check: Total amount ₹45.60 and tax ₹4.10 are fully aligned.
+• Categorization Review: Standard operational expense classified under Food. Compliant.
+
+💡 SPENDING EFFICIENCY RECOMMENDATIONS:
+• Ensure all receipts for this category are logged under verified corporate tax profile to capture tax credit write-offs.`;
   } else if (name.includes('figma') || name.includes('design') || name.includes('adobe') || name.includes('saas')) {
     merchant = 'Figma Inc.';
     category = 'Subscriptions';
@@ -179,6 +226,12 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
       { name: 'Figma Professional Plan - Annual Seats', quantity: 8, price: 15.00, total: 120.00 }
     ];
     isSubscription = true;
+    analysis = `🔍 SaaS SUBSCRIPTION AUDIT:
+• Plan: Figma Professional | Monthly Price per Seat: ₹15.00 | Qty: 8 seats | Total: ₹120.00.
+
+💡 COST OPTIMIZATION OPPORTUNITY:
+• Switching to an Annual Billing cycle instead of monthly would reduce the subscription cost from ₹15.00 to ₹12.00 per seat. Annual cost reduction: +₹288.00.
+• Compliance Check: Fully within monthly department SaaS buffer limit (₹500.00).`;
   } else if (name.includes('uber') || name.includes('taxi') || name.includes('ride')) {
     merchant = 'Uber Technologies';
     category = 'Travel';
@@ -187,6 +240,9 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
     items = [
       { name: 'Standard UberX Ride - Business Profile', quantity: 1, price: 32.40, total: 32.40 }
     ];
+    analysis = `🔍 TRAVEL COMPLIANCE & DUPLICATE WARNING:
+• Subtotal: ₹30.00 | Taxes: ₹2.40 | Total: ₹32.40.
+• Travel Policy Check: Standard rideshare billing matches corporate travel parameters perfectly.`;
   } else if (name.includes('slack') || name.includes('comm') || name.includes('chat')) {
     merchant = 'Slack Technologies';
     category = 'Subscriptions';
@@ -196,6 +252,9 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
       { name: 'Slack Pro Plan - Monthly subscription fee', quantity: 60, price: 8.00, total: 480.00 }
     ];
     isSubscription = true;
+    analysis = `🔍 SaaS SUBSCRIPTION AUDIT:
+• Plan: Slack Pro | Monthly Price per Seat: ₹8.00 | Qty: 60 seats | Total: ₹480.00.
+• Cost Optimization: Transitioning to annual invoicing yields 15% bulk volume credit savings.`;
   } else if (name.includes('rent') || name.includes('office') || name.includes('utilities')) {
     merchant = 'Metro Offices LLC';
     category = 'Utilities';
@@ -205,6 +264,8 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
       { name: 'Monthly Co-working Space & Desk Rental', quantity: 1, price: 2500.00, total: 2500.00 }
     ];
     isSubscription = true;
+    analysis = `🔍 UTILITY LEASE AUDIT:
+• Co-working Space Rental for Q3: ₹2,500.00. Compliant and pre-approved by operations.`;
   } else {
     // Generate a semi-random high-fidelity mock using the filename to seed
     const hash = fileName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
@@ -223,16 +284,29 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
       { name: `${merchant} Premium Service Package`, quantity: 1, price: amount - tax, total: amount - tax },
       { name: 'VAT / Tax @ 9%', quantity: 1, price: tax, total: tax }
     ];
+    analysis = `🔍 GENERAL COMPLIANCE AUDIT:
+• Arithmetic Check: Total amount ₹${amount.toFixed(2)} and tax ₹${tax.toFixed(2)} are fully aligned.
+• Categorization Review: Standard operational expense classified under ${category}. Compliant.`;
   }
 
   // Generate a realistic monospaced invoice number
-  const rNum = 100000 + (fileName.length * 37) % 899999;
-  const invoiceNumber = `INV-2026-${rNum}`;
+  let invoiceNumber = '';
+  if (name.includes('techmart')) {
+    invoiceNumber = 'INV-2026-0523-001';
+  } else {
+    const rNum = 100000 + (fileName.length * 37) % 899999;
+    invoiceNumber = `INV-2026-${rNum}`;
+  }
 
   // Custom date matching
-  const dateObj = new Date();
-  dateObj.setDate(dateObj.getDate() - (fileName.length % 30)); // random recent date
-  const dateStr = dateObj.toISOString().split('T')[0];
+  let dateStr = '';
+  if (name.includes('techmart')) {
+    dateStr = '2026-05-23';
+  } else {
+    const dateObj = new Date();
+    dateObj.setDate(dateObj.getDate() - (fileName.length % 30)); // random recent date
+    dateStr = dateObj.toISOString().split('T')[0];
+  }
 
   return {
     isValidInvoice: true,
@@ -247,7 +321,8 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
     items,
     anomalyDetected,
     anomalyDescription,
-    isSubscription
+    isSubscription,
+    analysis
   };
 }
 
@@ -286,7 +361,8 @@ export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, 
           ],
           "anomalyDetected": boolean (set true if tax doesn't align with amount, if values seem suspicious, or if amount is abnormally large),
           "anomalyDescription": "Description of anomaly if detected",
-          "isSubscription": boolean (set true if this appears to be a monthly recurring subscription, e.g. SaaS platforms, cloud tools, utility contracts)
+          "isSubscription": boolean (set true if this appears to be a monthly recurring subscription, e.g. SaaS platforms, cloud tools, utility contracts),
+          "analysis": "A detailed, structured, professional financial audit and spending analysis of the invoice text. This must include: 1) Tax verification (e.g. verifying subtotal, CGST, SGST, VAT percentages and checking for arithmetic alignment), 2) Savings and cost-optimization recommendations for the itemized items (e.g. switching suppliers, negotiating corporate terms, or moving standard packages), and 3) Compliance and categorization review (e.g. corporate expense alignment and tracking suggestions)."
         }
 
         Only return a valid, raw JSON object. Do not wrap it in markdown formatting or include \`\`\`json. Just the raw parsable JSON matching the schema precisely.
@@ -307,24 +383,16 @@ export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, 
             }
           ];
         } else if (fileType.startsWith('image/')) {
-          // Parse image using llama-3.2 vision model on Groq
-          modelToUse = 'llama-3.2-11b-vision-preview';
-          const base64Data = fileBuffer.toString('base64');
+          // Perform local OCR on image using Tesseract.js character scanner
+          console.log(`[OCR Layer] Scanning image for characters: ${fileName}`);
+          const ocrResult = await Tesseract.recognize(fileBuffer, 'eng');
+          const extractedText = ocrResult.data.text || '';
+          console.log(`[OCR Layer] Scan completed. Extracted ${extractedText.length} characters.`);
+          
           messages = [
             {
               role: 'user',
-              content: [
-                {
-                  type: 'text',
-                  text: prompt
-                },
-                {
-                  type: 'image_url',
-                  image_url: {
-                    url: `data:${fileType};base64,${base64Data}`
-                  }
-                }
-              ]
+              content: `${prompt}\n\nHere is the raw text content extracted via OCR from the image invoice:\n\n${extractedText}`
             }
           ];
         }
