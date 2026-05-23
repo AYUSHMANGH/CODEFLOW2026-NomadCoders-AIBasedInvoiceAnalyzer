@@ -314,6 +314,17 @@ export const InvoiceDetails: React.FC = () => {
                 </div>
               </div>
             </GlassCard>
+
+            {currentInvoice.ocrResult?.extractedText && (
+              <GlassCard className="border border-glass-border !p-4 bg-gradient-to-b from-[#051424] to-[#0B1020] text-left">
+                <h5 className="text-[10px] font-mono text-slate-400 uppercase tracking-wider mb-2.5 border-b border-[#1E293B]/60 pb-2">
+                  Raw Extracted OCR Text
+                </h5>
+                <pre className="text-[10px] font-mono text-slate-300 whitespace-pre-wrap leading-relaxed max-h-48 overflow-y-auto bg-[#030912]/80 p-3 rounded-xl border border-[#1E293B]/40 scrollbar-thin">
+                  {currentInvoice.ocrResult.extractedText}
+                </pre>
+              </GlassCard>
+            )}
           </div>
 
           {/* RIGHT COLUMN: Metadata Editor Form (React Hook Form) */}
