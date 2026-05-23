@@ -30,6 +30,7 @@ export interface Invoice {
     isSubscription: boolean;
     isValidInvoice?: boolean;
     validationError?: string;
+    extractedText?: string;
   };
 }
 
@@ -581,7 +582,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
               items,
               anomalyDetected: category === 'Travel',
               anomalyDescription: category === 'Travel' ? 'Potential duplicate booking detected.' : undefined,
-              isSubscription: isSub
+              isSubscription: isSub,
+              extractedText: `MOCK CLIENT-SIDE OCR TEXT SCAN\n-----------------------------\nMerchant: ${merchant}\nInvoice: INV-2026-${id}\nTotal Amount: $${amount}\n`
             }
           };
         }
