@@ -81,7 +81,7 @@ export const Analytics: React.FC = () => {
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Total Tax Paid (VAT)</span>
-                <h3 className="text-2xl font-mono font-extrabold text-white mt-2">${taxSummary.totalTax.toLocaleString()}</h3>
+                <h3 className="text-2xl font-mono font-extrabold text-white mt-2">₹{taxSummary.totalTax.toLocaleString()}</h3>
                 <span className="text-[9px] text-[#bdc2ff] font-mono mt-1 block">Accumulated across Q3 receipts</span>
               </div>
               <div className="w-10 h-10 rounded-xl bg-cyan/15 border border-cyan/20 flex items-center justify-center text-cyan">
@@ -94,7 +94,7 @@ export const Analytics: React.FC = () => {
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Reclaimable GST</span>
-                <h3 className="text-2xl font-mono font-extrabold text-cyan-glow mt-2">${taxSummary.taxReclaimable.toLocaleString()}</h3>
+                <h3 className="text-2xl font-mono font-extrabold text-cyan-glow mt-2">₹{taxSummary.taxReclaimable.toLocaleString()}</h3>
                 <span className="text-[9px] text-[#1ED760] font-mono mt-1 block">Eligible corporate operational tax reclaims</span>
               </div>
               <div className="w-10 h-10 rounded-xl bg-[#1ED760]/15 border border-[#1ED760]/20 flex items-center justify-center text-[#1ED760]">
@@ -209,26 +209,26 @@ export const Analytics: React.FC = () => {
                   {/* Heatmap blocks */}
                   <div className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all hover:scale-105 ${
                     row['9 AM'] > 1000 ? 'bg-cyan text-slate-900 shadow-md shadow-cyan/25' : row['9 AM'] > 100 ? 'bg-[#7C5CFC]/80 text-white' : row['9 AM'] > 0 ? 'bg-[#5B8CFF]/30 text-[#bdc2ff]' : 'bg-[#051424] text-slate-600 border border-[#1E293B]'
-                  }`} title={`Mon 9AM: $${row['9 AM']}`}>
-                    {row['9 AM'] > 0 ? `$${Math.round(row['9 AM'])}` : '-'}
+                  }`} title={`${row.day} 9AM: ₹${row['9 AM']}`}>
+                    {row['9 AM'] > 0 ? `₹${Math.round(row['9 AM'])}` : '-'}
                   </div>
 
                   <div className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all hover:scale-105 ${
                     row['12 PM'] > 1000 ? 'bg-cyan text-slate-900 shadow-md shadow-cyan/25' : row['12 PM'] > 100 ? 'bg-[#7C5CFC]/80 text-white' : row['12 PM'] > 0 ? 'bg-[#5B8CFF]/30 text-[#bdc2ff]' : 'bg-[#051424] text-slate-600 border border-[#1E293B]'
-                  }`} title={`Mon 12PM: $${row['12 PM']}`}>
-                    {row['12 PM'] > 0 ? `$${Math.round(row['12 PM'])}` : '-'}
+                  }`} title={`${row.day} 12PM: ₹${row['12 PM']}`}>
+                    {row['12 PM'] > 0 ? `₹${Math.round(row['12 PM'])}` : '-'}
                   </div>
 
                   <div className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all hover:scale-105 ${
                     row['3 PM'] > 1000 ? 'bg-cyan text-slate-900 shadow-md shadow-cyan/25' : row['3 PM'] > 100 ? 'bg-[#7C5CFC]/80 text-white' : row['3 PM'] > 0 ? 'bg-[#5B8CFF]/30 text-[#bdc2ff]' : 'bg-[#051424] text-slate-600 border border-[#1E293B]'
-                  }`} title={`Mon 3PM: $${row['3 PM']}`}>
-                    {row['3 PM'] > 0 ? `$${Math.round(row['3 PM'])}` : '-'}
+                  }`} title={`${row.day} 3PM: ₹${row['3 PM']}`}>
+                    {row['3 PM'] > 0 ? `₹${Math.round(row['3 PM'])}` : '-'}
                   </div>
 
                   <div className={`h-8 rounded-lg flex items-center justify-center text-[10px] font-mono font-bold transition-all hover:scale-105 ${
                     row['6 PM'] > 1000 ? 'bg-cyan text-slate-900 shadow-md shadow-cyan/25' : row['6 PM'] > 100 ? 'bg-[#7C5CFC]/80 text-white' : row['6 PM'] > 0 ? 'bg-[#5B8CFF]/30 text-[#bdc2ff]' : 'bg-[#051424] text-slate-600 border border-[#1E293B]'
-                  }`} title={`Mon 6PM: $${row['6 PM']}`}>
-                    {row['6 PM'] > 0 ? `$${Math.round(row['6 PM'])}` : '-'}
+                  }`} title={`${row.day} 6PM: ₹${row['6 PM']}`}>
+                    {row['6 PM'] > 0 ? `₹${Math.round(row['6 PM'])}` : '-'}
                   </div>
 
                   <div className="h-8 rounded-lg bg-[#051424] border border-[#1E293B] text-slate-600 flex items-center justify-center font-mono">

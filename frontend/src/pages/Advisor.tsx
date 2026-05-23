@@ -248,7 +248,7 @@ export const Advisor: React.FC = () => {
               <div>
                 <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block">Projected 12-Month Result</span>
                 <h3 className="text-xl font-mono font-extrabold text-white mt-1.5">
-                  +${projectedCash.toLocaleString()} <span className="text-xs text-success font-semibold">Available Cash</span>
+                  +₹{projectedCash.toLocaleString()} <span className="text-xs text-success font-semibold">Available Cash</span>
                 </h3>
                 <p className="text-[9px] text-slate-400 leading-relaxed mt-2.5">
                   This projected trajectory enables hiring 1 new associate or moving into a larger office space by Q4.

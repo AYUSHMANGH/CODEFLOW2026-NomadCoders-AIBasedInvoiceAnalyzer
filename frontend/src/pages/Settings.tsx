@@ -92,7 +92,7 @@ export const Settings: React.FC = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {/* Target budget limit */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-mono text-slate-400 uppercase pl-1">Monthly Budget Limit (USD)</label>
+                    <label className="text-[9px] font-mono text-slate-400 uppercase pl-1">Monthly Budget Limit (INR, ₹)</label>
                     <input
                       type="number"
                       required
@@ -107,7 +107,7 @@ export const Settings: React.FC = () => {
                     <label className="text-[9px] font-mono text-slate-400 uppercase pl-1">Base Valuation Currency</label>
                     <select
                       className="w-full px-4 py-2.5 bg-[#051424] border border-[#334155] rounded-xl text-xs text-white focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300 cursor-pointer"
-                      defaultValue="USD"
+                      defaultValue="INR"
                     >
                       <option value="USD">USD ($) - United States Dollar</option>
                       <option value="EUR">EUR (€) - European Euro</option>

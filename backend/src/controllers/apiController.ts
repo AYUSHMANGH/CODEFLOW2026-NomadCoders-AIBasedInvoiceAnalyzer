@@ -1,5 +1,15 @@
 import { Request, Response } from 'express';
+import * as fs from 'fs';
+import * as path from 'path';
 import { extractInvoiceData, generateInsightsFromInvoices, getAdvisorChatResponse } from '../services/aiService';
+
+const getMonthName = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return months[date.getMonth()];
+};
 
 // Stateful In-Memory Invoice Database for local sandbox and instant preview
 interface InvoiceRecord {
@@ -11,102 +21,7 @@ interface InvoiceRecord {
   ocrResult?: any;
 }
 
-// Initialized with standard mock values from the high-fidelity UI design assets!
-let localInvoiceDB: InvoiceRecord[] = [
-  {
-    id: 'inv-001',
-    fileName: 'aws-billing-oct23.pdf',
-    fileUrl: '',
-    status: 'completed',
-    uploadedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-    ocrResult: {
-      merchant: 'Amazon Web Services',
-      date: '2023-10-22',
-      invoiceNumber: 'INV-2023-948123',
-      amount: 1489.12,
-      currency: 'USD',
-      tax: 148.91,
-      confidence: 99.8,
-      category: 'Utilities',
-      items: [
-        { name: 'EC2 Compute Engine vCPU Hours', quantity: 720, price: 1.25, total: 900.00 },
-        { name: 'S3 Standard Storage (TB-Mo)', quantity: 4, price: 23.00, total: 92.00 },
-        { name: 'RDS Managed Database Instances', quantity: 1, price: 497.12, total: 497.12 }
-      ],
-      anomalyDetected: false,
-      isSubscription: true
-    }
-  },
-  {
-    id: 'inv-002',
-    fileName: 'delta-air-jfk-sfo.png',
-    fileUrl: '',
-    status: 'completed',
-    uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    ocrResult: {
-      merchant: 'Delta Air Lines',
-      date: '2023-10-20',
-      invoiceNumber: 'INV-2023-102948',
-      amount: 850.00,
-      currency: 'USD',
-      tax: 68.00,
-      confidence: 98.4,
-      category: 'Travel',
-      items: [
-        { name: 'Roundtrip Ticket: JFK to SFO (Economy)', quantity: 1, price: 782.00, total: 782.00 },
-        { name: 'Cabin Baggage Fee & Seat Selection', quantity: 1, price: 68.00, total: 68.00 }
-      ],
-      anomalyDetected: true,
-      anomalyDescription: 'Potential duplicate booking or high-value expense above the category 30-day average (+122%).',
-      isSubscription: false
-    }
-  },
-  {
-    id: 'inv-003',
-    fileName: 'modern-kitchen-lunch.jpg',
-    fileUrl: '',
-    status: 'completed',
-    uploadedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    ocrResult: {
-      merchant: 'The Modern Kitchen',
-      date: '2023-10-22',
-      invoiceNumber: 'INV-2023-440212',
-      amount: 45.60,
-      currency: 'USD',
-      tax: 4.10,
-      confidence: 99.1,
-      category: 'Food',
-      items: [
-        { name: 'Executive Business Lunch Catering', quantity: 3, price: 13.83, total: 41.50 },
-        { name: 'Premium Beverages & Sparkling Water', quantity: 1, price: 4.10, total: 4.10 }
-      ],
-      anomalyDetected: false,
-      isSubscription: false
-    }
-  },
-  {
-    id: 'inv-004',
-    fileName: 'figma-subscription-oct.png',
-    fileUrl: '',
-    status: 'completed',
-    uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    ocrResult: {
-      merchant: 'Figma Inc.',
-      date: '2023-10-18',
-      invoiceNumber: 'INV-2023-882049',
-      amount: 120.00,
-      currency: 'USD',
-      tax: 12.00,
-      confidence: 99.9,
-      category: 'Subscriptions',
-      items: [
-        { name: 'Figma Professional Plan - Annual Seats', quantity: 8, price: 15.00, total: 120.00 }
-      ],
-      anomalyDetected: false,
-      isSubscription: true
-    }
-  }
-];
+let localInvoiceDB: InvoiceRecord[] = [];
 
 // Global configuration budget
 let budgetLimit = 5000;
@@ -150,10 +65,34 @@ export const extractInvoice = async (req: Request, res: Response) => {
 
     // Trigger AI service
     record.status = 'processing';
-    const ocrData = await extractInvoiceData(record.fileName);
+
+    let fileBuffer: Buffer | undefined;
+    let fileType: string | undefined;
+
+    if (record.fileUrl && fs.existsSync(record.fileUrl)) {
+      try {
+        fileBuffer = fs.readFileSync(record.fileUrl);
+        const ext = path.extname(record.fileName).toLowerCase();
+        if (ext === '.pdf') {
+          fileType = 'application/pdf';
+        } else if (ext === '.png') {
+          fileType = 'image/png';
+        } else if (ext === '.jpg' || ext === '.jpeg') {
+          fileType = 'image/jpeg';
+        }
+      } catch (err) {
+        console.error('Failed to read file from disk for extraction:', err);
+      }
+    }
+
+    const ocrData = await extractInvoiceData(record.fileName, fileBuffer, fileType);
     
     record.ocrResult = ocrData;
-    record.status = 'completed';
+    if (ocrData && ocrData.isValidInvoice === false) {
+      record.status = 'failed';
+    } else {
+      record.status = 'completed';
+    }
 
     return res.status(200).json(record);
   } catch (error: any) {
@@ -205,9 +144,33 @@ export const reprocessInvoice = async (req: Request, res: Response) => {
     }
 
     record.status = 'processing';
-    const ocrData = await extractInvoiceData(record.fileName);
+
+    let fileBuffer: Buffer | undefined;
+    let fileType: string | undefined;
+
+    if (record.fileUrl && fs.existsSync(record.fileUrl)) {
+      try {
+        fileBuffer = fs.readFileSync(record.fileUrl);
+        const ext = path.extname(record.fileName).toLowerCase();
+        if (ext === '.pdf') {
+          fileType = 'application/pdf';
+        } else if (ext === '.png') {
+          fileType = 'image/png';
+        } else if (ext === '.jpg' || ext === '.jpeg') {
+          fileType = 'image/jpeg';
+        }
+      } catch (err) {
+        console.error('Failed to read file from disk for reprocessing:', err);
+      }
+    }
+
+    const ocrData = await extractInvoiceData(record.fileName, fileBuffer, fileType);
     record.ocrResult = ocrData;
-    record.status = 'completed';
+    if (ocrData && ocrData.isValidInvoice === false) {
+      record.status = 'failed';
+    } else {
+      record.status = 'completed';
+    }
 
     return res.status(200).json(record);
   } catch (error: any) {
@@ -232,17 +195,25 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   const totalSpend = completedInvoices.reduce((sum, item) => sum + (item.ocrResult?.amount || 0), 0);
   const pendingCount = localInvoiceDB.filter(item => item.status !== 'completed').length;
   
-  // Growth mock data (Jan to Aug)
+  // Growth dynamic data (initially zero dummy data!)
   const monthlySpendData = [
-    { name: 'Jan', Budgeted: 3500, Actual: 2900 },
-    { name: 'Feb', Budgeted: 3500, Actual: 3200 },
-    { name: 'Mar', Budgeted: 3800, Actual: 3100 },
-    { name: 'Apr', Budgeted: 3800, Actual: 4100 },
-    { name: 'May', Budgeted: 4000, Actual: 3800 },
-    { name: 'Jun', Budgeted: 4000, Actual: 3950 },
-    { name: 'Jul', Budgeted: 4500, Actual: 4200 },
-    { name: 'Aug', Budgeted: 5000, Actual: totalSpend }
+    { name: 'Jan', Budgeted: 3500, Actual: 0 },
+    { name: 'Feb', Budgeted: 3500, Actual: 0 },
+    { name: 'Mar', Budgeted: 3800, Actual: 0 },
+    { name: 'Apr', Budgeted: 3800, Actual: 0 },
+    { name: 'May', Budgeted: 4000, Actual: 0 },
+    { name: 'Jun', Budgeted: 4000, Actual: 0 },
+    { name: 'Jul', Budgeted: 4500, Actual: 0 },
+    { name: 'Aug', Budgeted: budgetLimit, Actual: 0 }
   ];
+
+  completedInvoices.forEach(item => {
+    const month = getMonthName(item.ocrResult?.date);
+    const monthData = monthlySpendData.find(m => m.name === month);
+    if (monthData) {
+      monthData.Actual = parseFloat((monthData.Actual + (item.ocrResult?.amount || 0)).toFixed(2));
+    }
+  });
 
   // Category aggregate
   const categorySummary: { [key: string]: number } = {};
@@ -287,13 +258,24 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 export const getAnalyticsStats = async (req: Request, res: Response) => {
   const completedInvoices = localInvoiceDB.filter(item => item.status === 'completed');
   
-  // Stacked categories trends
+  // Stacked categories trends (initially zero dummy data!)
   const trendData = [
-    { month: 'May', Food: 240, Travel: 800, Utilities: 2100, Subscriptions: 660 },
-    { month: 'Jun', Food: 310, Travel: 950, Utilities: 2150, Subscriptions: 540 },
-    { month: 'Jul', Food: 180, Travel: 450, Utilities: 2200, Subscriptions: 1370 },
-    { month: 'Aug', Food: 45.60, Travel: 850.00, Utilities: 1489.12, Subscriptions: 600 }
+    { month: 'May', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 },
+    { month: 'Jun', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 },
+    { month: 'Jul', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 },
+    { month: 'Aug', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 }
   ];
+
+  completedInvoices.forEach(item => {
+    const month = getMonthName(item.ocrResult?.date);
+    const monthTrend = trendData.find(t => t.month === month);
+    if (monthTrend) {
+      const cat = item.ocrResult?.category || 'Shopping';
+      if (cat in monthTrend) {
+        (monthTrend as any)[cat] = parseFloat(((monthTrend as any)[cat] + (item.ocrResult?.amount || 0)).toFixed(2));
+      }
+    }
+  });
 
   // Compute GST / Tax Summary
   let totalTax = 0;
@@ -306,14 +288,29 @@ export const getAnalyticsStats = async (req: Request, res: Response) => {
     }
   });
 
-  // Calendar Heatmap Grid (Spend density mock)
+  // Calendar Heatmap Grid (Spend density - initially zero dummy data!)
   const heatmapData = [
-    { day: 'Mon', '9 AM': 12, '12 PM': 45, '3 PM': 0, '6 PM': 23 },
-    { day: 'Tue', '9 AM': 0, '12 PM': 0, '3 PM': 850, '6 PM': 10 },
-    { day: 'Wed', '9 AM': 1489, '12 PM': 0, '3 PM': 150, '6 PM': 0 },
-    { day: 'Thu', '9 AM': 20, '12 PM': 45, '3 PM': 55, '6 PM': 120 },
-    { day: 'Fri', '9 AM': 0, '12 PM': 120, '3 PM': 0, '6 PM': 80 }
+    { day: 'Mon', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+    { day: 'Tue', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+    { day: 'Wed', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+    { day: 'Thu', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+    { day: 'Fri', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 }
   ];
+
+  completedInvoices.forEach(item => {
+    const date = new Date(item.ocrResult?.date);
+    if (!isNaN(date.getTime())) {
+      const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const dayName = days[date.getDay()];
+      const dayTrend = heatmapData.find(h => h.day === dayName);
+      if (dayTrend) {
+        const hours = ['9 AM', '12 PM', '3 PM', '6 PM'];
+        const hash = (item.ocrResult?.invoiceNumber || '').split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+        const slot = hours[hash % hours.length];
+        (dayTrend as any)[slot] = parseFloat(((dayTrend as any)[slot] + (item.ocrResult?.amount || 0)).toFixed(2));
+      }
+    }
+  });
 
   return res.status(200).json({
     trendData,

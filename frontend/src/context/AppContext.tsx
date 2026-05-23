@@ -1,6 +1,14 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 
+const getMonthName = (dateStr?: string): string => {
+  if (!dateStr) return '';
+  const date = new Date(dateStr);
+  if (isNaN(date.getTime())) return '';
+  const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+  return months[date.getMonth()];
+};
+
 export interface Invoice {
   id: string;
   fileName: string;
@@ -20,6 +28,8 @@ export interface Invoice {
     anomalyDetected: boolean;
     anomalyDescription?: string;
     isSubscription: boolean;
+    isValidInvoice?: boolean;
+    validationError?: string;
   };
 }
 
@@ -85,6 +95,13 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   useEffect(() => {
     const initData = async () => {
       setLoading(true);
+      
+      // One-time clear of legacy dummy invoices from localStorage
+      const saved = localStorage.getItem('financelens_invoices');
+      if (saved && (saved.includes('inv-001') || saved.includes('aws-billing-oct23.pdf'))) {
+        localStorage.removeItem('financelens_invoices');
+      }
+
       try {
         const response = await fetch('http://localhost:5000/health');
         if (response.ok) {
@@ -151,101 +168,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   };
 
   const loadMockInitialInvoices = () => {
-    const initialMocks: Invoice[] = [
-      {
-        id: 'inv-001',
-        fileName: 'aws-billing-oct23.pdf',
-        fileUrl: '',
-        status: 'completed',
-        uploadedAt: new Date(Date.now() - 4 * 24 * 60 * 60 * 1000).toISOString(),
-        ocrResult: {
-          merchant: 'Amazon Web Services',
-          date: '2023-10-22',
-          invoiceNumber: 'INV-2023-948123',
-          amount: 1489.12,
-          currency: 'USD',
-          tax: 148.91,
-          confidence: 99.8,
-          category: 'Utilities',
-          items: [
-            { name: 'EC2 Compute Engine vCPU Hours', quantity: 720, price: 1.25, total: 900.00 },
-            { name: 'S3 Standard Storage (TB-Mo)', quantity: 4, price: 23.00, total: 92.00 },
-            { name: 'RDS Managed Database Instances', quantity: 1, price: 497.12, total: 497.12 }
-          ],
-          anomalyDetected: false,
-          isSubscription: true
-        }
-      },
-      {
-        id: 'inv-002',
-        fileName: 'delta-air-jfk-sfo.png',
-        fileUrl: '',
-        status: 'completed',
-        uploadedAt: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-        ocrResult: {
-          merchant: 'Delta Air Lines',
-          date: '2023-10-20',
-          invoiceNumber: 'INV-2023-102948',
-          amount: 850.00,
-          currency: 'USD',
-          tax: 68.00,
-          confidence: 98.4,
-          category: 'Travel',
-          items: [
-            { name: 'Roundtrip Ticket: JFK to SFO (Economy)', quantity: 1, price: 782.00, total: 782.00 },
-            { name: 'Cabin Baggage Fee & Seat Selection', quantity: 1, price: 68.00, total: 68.00 }
-          ],
-          anomalyDetected: true,
-          anomalyDescription: 'Potential duplicate booking or high-value expense above the category 30-day average (+122%).',
-          isSubscription: false
-        }
-      },
-      {
-        id: 'inv-003',
-        fileName: 'modern-kitchen-lunch.jpg',
-        fileUrl: '',
-        status: 'completed',
-        uploadedAt: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-        ocrResult: {
-          merchant: 'The Modern Kitchen',
-          date: '2023-10-22',
-          invoiceNumber: 'INV-2023-440212',
-          amount: 45.60,
-          currency: 'USD',
-          tax: 4.10,
-          confidence: 99.1,
-          category: 'Food',
-          items: [
-            { name: 'Executive Business Lunch Catering', quantity: 3, price: 13.83, total: 41.50 },
-            { name: 'Premium Beverages & Sparkling Water', quantity: 1, price: 4.10, total: 4.10 }
-          ],
-          anomalyDetected: false,
-          isSubscription: false
-        }
-      },
-      {
-        id: 'inv-004',
-        fileName: 'figma-subscription-oct.png',
-        fileUrl: '',
-        status: 'completed',
-        uploadedAt: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-        ocrResult: {
-          merchant: 'Figma Inc.',
-          date: '2023-10-18',
-          invoiceNumber: 'INV-2023-882049',
-          amount: 120.00,
-          currency: 'USD',
-          tax: 12.00,
-          confidence: 99.9,
-          category: 'Subscriptions',
-          items: [
-            { name: 'Figma Professional Plan - Annual Seats', quantity: 8, price: 15.00, total: 120.00 }
-          ],
-          anomalyDetected: false,
-          isSubscription: true
-        }
-      }
-    ];
+    const initialMocks: Invoice[] = [];
     setInvoices(initialMocks);
     localStorage.setItem('financelens_invoices', JSON.stringify(initialMocks));
   };
@@ -321,7 +244,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (subTotal > 0) {
       recommendations.push({
         title: 'Cancel Duplicate Subscriptions',
-        description: `You have ${subs.length} recurring SaaS platforms active, billing a total of $${subTotal.toFixed(2)} monthly. De-provision idle licenses immediately.`,
+        description: `You have ${subs.length} recurring SaaS platforms active, billing a total of ₹${subTotal.toFixed(2)} monthly. De-provision idle licenses immediately.`,
         impact: 'Medium',
         category: 'Subscriptions'
       });
@@ -338,17 +261,25 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const savingsOpportunity = parseFloat((totalSpend * 0.12).toFixed(2));
 
-    // Monthly trends mock
+    // Dynamic monthly spend data (clean slate, zero dummy actuals!)
     const monthlySpendData = [
-      { name: 'Jan', Budgeted: 3500, Actual: 2900 },
-      { name: 'Feb', Budgeted: 3500, Actual: 3200 },
-      { name: 'Mar', Budgeted: 3800, Actual: 3100 },
-      { name: 'Apr', Budgeted: 3800, Actual: 4100 },
-      { name: 'May', Budgeted: 4000, Actual: 3800 },
-      { name: 'Jun', Budgeted: 4000, Actual: 3950 },
-      { name: 'Jul', Budgeted: 4500, Actual: 4200 },
-      { name: 'Aug', Budgeted: budgetLimit, Actual: parseFloat(totalSpend.toFixed(2)) }
+      { name: 'Jan', Budgeted: 3500, Actual: 0 },
+      { name: 'Feb', Budgeted: 3500, Actual: 0 },
+      { name: 'Mar', Budgeted: 3800, Actual: 0 },
+      { name: 'Apr', Budgeted: 3800, Actual: 0 },
+      { name: 'May', Budgeted: 4000, Actual: 0 },
+      { name: 'Jun', Budgeted: 4000, Actual: 0 },
+      { name: 'Jul', Budgeted: 4500, Actual: 0 },
+      { name: 'Aug', Budgeted: budgetLimit, Actual: 0 }
     ];
+
+    completed.forEach(item => {
+      const month = getMonthName(item.ocrResult?.date);
+      const monthData = monthlySpendData.find(m => m.name === month);
+      if (monthData) {
+        monthData.Actual = parseFloat((monthData.Actual + (item.ocrResult?.amount || 0)).toFixed(2));
+      }
+    });
 
     setDashboardStats({
       totalSpend: parseFloat(totalSpend.toFixed(2)),
@@ -359,7 +290,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       monthlySpendData,
       categoryChart,
       merchantChart,
-      aiSummary: `Local Sandbox Analysis: You have audited ${completed.length} receipts representing $${totalSpend.toFixed(2)} in Q3. Overall budget efficiency stands at ${budgetScore}/1000. Travel charges are currently flagged.`,
+      aiSummary: `Local Sandbox Analysis: You have audited ${completed.length} receipts representing ₹${totalSpend.toFixed(2)} in Q3. Overall budget efficiency stands at ${budgetScore}/1000. Travel charges are currently flagged.`,
       recommendations,
       alerts
     });
@@ -369,13 +300,24 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const calculateClientAnalytics = () => {
     const completed = invoices.filter(i => i.status === 'completed');
     
-    // Stacked categories breakdown trends
+    // Stacked categories breakdown trends (initially zero dummy data!)
     const trendData = [
-      { month: 'May', Food: 240, Travel: 800, Utilities: 2100, Subscriptions: 660 },
-      { month: 'Jun', Food: 310, Travel: 950, Utilities: 2150, Subscriptions: 540 },
-      { month: 'Jul', Food: 180, Travel: 450, Utilities: 2200, Subscriptions: 1370 },
-      { month: 'Aug', Food: 45.60, Travel: 850.00, Utilities: 1489.12, Subscriptions: 600 }
+      { month: 'May', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 },
+      { month: 'Jun', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 },
+      { month: 'Jul', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 },
+      { month: 'Aug', Food: 0, Travel: 0, Utilities: 0, Subscriptions: 0, Shopping: 0, Medical: 0, Entertainment: 0, Education: 0 }
     ];
+
+    completed.forEach(item => {
+      const month = getMonthName(item.ocrResult?.date);
+      const monthTrend = trendData.find(t => t.month === month);
+      if (monthTrend) {
+        const cat = item.ocrResult?.category || 'Shopping';
+        if (cat in monthTrend) {
+          (monthTrend as any)[cat] = parseFloat(((monthTrend as any)[cat] + (item.ocrResult?.amount || 0)).toFixed(2));
+        }
+      }
+    });
 
     let totalTax = 0;
     let taxReclaimable = 0;
@@ -388,12 +330,27 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
 
     const heatmapData = [
-      { day: 'Mon', '9 AM': 12, '12 PM': 45, '3 PM': 0, '6 PM': 23 },
-      { day: 'Tue', '9 AM': 0, '12 PM': 0, '3 PM': 850, '6 PM': 10 },
-      { day: 'Wed', '9 AM': 1489, '12 PM': 0, '3 PM': 150, '6 PM': 0 },
-      { day: 'Thu', '9 AM': 20, '12 PM': 45, '3 PM': 55, '6 PM': 120 },
-      { day: 'Fri', '9 AM': 0, '12 PM': 120, '3 PM': 0, '6 PM': 80 }
+      { day: 'Mon', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+      { day: 'Tue', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+      { day: 'Wed', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+      { day: 'Thu', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 },
+      { day: 'Fri', '9 AM': 0, '12 PM': 0, '3 PM': 0, '6 PM': 0 }
     ];
+
+    completed.forEach(item => {
+      const date = new Date(item.ocrResult?.date || '');
+      if (!isNaN(date.getTime())) {
+        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+        const dayName = days[date.getDay()];
+        const dayTrend = heatmapData.find(h => h.day === dayName);
+        if (dayTrend) {
+          const hours = ['9 AM', '12 PM', '3 PM', '6 PM'];
+          const hash = (item.ocrResult?.invoiceNumber || '').split('').reduce((acc: number, c: string) => acc + c.charCodeAt(0), 0);
+          const slot = hours[hash % hours.length];
+          (dayTrend as any)[slot] = parseFloat(((dayTrend as any)[slot] + (item.ocrResult?.amount || 0)).toFixed(2));
+        }
+      }
+    });
 
     setAnalyticsStats({
       trendData,
@@ -526,11 +483,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (serverOffline) {
       await new Promise(resolve => setTimeout(resolve, 2000));
       
-      // Seed invoice metadata
-      const name = invoices.find(i => i.id === id)?.fileName || 'general.png';
-      
-      // Simple parse heuristics
+      const record = invoices.find(i => i.id === id);
+      const name = record?.fileName || 'general.png';
       const lower = name.toLowerCase();
+      
+      // Validation Check for mock mode
+      const ext = name.split('.').pop()?.toLowerCase();
+      const isAllowedExt = ['pdf', 'png', 'jpg', 'jpeg'].includes(ext || '');
+      
+      const invalidKeywords = ['cat', 'dog', 'notes', 'unrelated', 'book', 'sample-text', 'code', 'script', 'todo', 'photo', 'avatar', 'logo'];
+      const matchedInvalid = invalidKeywords.find(kw => lower.includes(kw));
+      
+      let isValid = true;
+      let errorMsg = '';
+      
+      if (!isAllowedExt && ext !== name) {
+        isValid = false;
+        errorMsg = `The file extension ".${ext}" is not supported. FinanceLens AI currently supports PDF, PNG, and JPEG documents under 25MB.`;
+      } else if (matchedInvalid) {
+        isValid = false;
+        errorMsg = `Verification failed: The document appears to contain "${matchedInvalid}" content. Only clear receipts, bills, and SaaS statements are supported. Please ensure you upload a valid financial invoice showing merchant, date, and items.`;
+      }
+
+      if (!isValid) {
+        setInvoices(prev => prev.map(inv => {
+          if (inv.id === id) {
+            return {
+              ...inv,
+              status: 'failed',
+              ocrResult: {
+                isValidInvoice: false,
+                validationError: errorMsg,
+                merchant: 'N/A',
+                date: new Date().toISOString().split('T')[0],
+                invoiceNumber: 'N/A',
+                amount: 0,
+                currency: 'USD',
+                tax: 0,
+                confidence: 0,
+                category: 'Shopping',
+                items: [],
+                anomalyDetected: false,
+                isSubscription: false
+              }
+            };
+          }
+          return inv;
+        }));
+        return;
+      }
+      
+      // Seed invoice metadata
       let merchant = 'General Services';
       let category = 'Shopping';
       let amount = 145.00;
@@ -566,6 +569,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
             ...inv,
             status: 'completed',
             ocrResult: {
+              isValidInvoice: true,
               merchant,
               date: new Date().toISOString().split('T')[0],
               invoiceNumber: `INV-2026-${100000 + Math.round(Math.random() * 899999)}`,

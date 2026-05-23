@@ -97,7 +97,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Total Spending</span>
-                <h3 className="text-2xl font-mono font-extrabold text-white mt-2">${totalSpend.toLocaleString()}</h3>
+                <h3 className="text-2xl font-mono font-extrabold text-white mt-2">₹{totalSpend.toLocaleString()}</h3>
               </div>
               <span className="text-[9px] bg-success/15 border border-success/35 text-success font-mono font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5">
                 +12.5%
@@ -212,7 +212,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex-1 flex flex-col justify-center items-center relative h-48">
               <div className="absolute flex flex-col justify-center items-center">
                 <span className="text-[10px] text-slate-500 font-mono uppercase leading-none">Total spend</span>
-                <span className="text-xl font-mono font-extrabold text-white mt-1.5">${totalSpend.toLocaleString()}</span>
+                <span className="text-xl font-mono font-extrabold text-white mt-1.5">₹{totalSpend.toLocaleString()}</span>
               </div>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
@@ -245,7 +245,7 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <span className="text-white font-mono font-bold">{pct}%</span>
-                      <span className="text-[10px] text-slate-500 font-mono ml-2">${entry.value.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-500 font-mono ml-2">₹{entry.value.toLocaleString()}</span>
                     </div>
                   </div>
                 );
@@ -302,7 +302,7 @@ export const Dashboard: React.FC = () => {
                         </span>
                       </td>
                       <td className="py-4.5 font-mono font-bold text-white">
-                        {inv.ocrResult ? `$${inv.ocrResult.amount.toFixed(2)}` : '--'}
+                        {inv.ocrResult ? `₹${(inv.ocrResult.amount ?? 0).toFixed(2)}` : '--'}
                       </td>
                       <td className="py-4.5 text-slate-400 font-mono">{inv.ocrResult?.date || inv.uploadedAt.split('T')[0]}</td>
                       <td className="py-4.5">

@@ -160,10 +160,10 @@ export const Expenses: React.FC = () => {
                         </div>
                       </td>
                       <td className="py-4 font-mono font-bold text-cyan-glow">
-                        {inv.ocrResult ? `$${inv.ocrResult.amount.toFixed(2)}` : '--'}
+                        {inv.ocrResult ? `₹${(inv.ocrResult.amount ?? 0).toFixed(2)}` : '--'}
                       </td>
                       <td className="py-4 font-mono text-slate-400">
-                        {inv.ocrResult ? `$${inv.ocrResult.tax.toFixed(2)}` : '--'}
+                        {inv.ocrResult ? `₹${(inv.ocrResult.tax ?? 0).toFixed(2)}` : '--'}
                       </td>
                       <td className="py-4">
                         {inv.ocrResult ? (

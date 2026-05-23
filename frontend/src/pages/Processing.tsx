@@ -28,70 +28,79 @@ export const Processing: React.FC = () => {
   useEffect(() => {
     if (!id) return;
 
-    const processOCR = async () => {
+    let t1: any;
+    let t2: any;
+    let t3: any;
+    let t4: any;
+    let t5: any;
+
+    const runSimulation = () => {
       // Step 1: Upload (instant)
       setCurrentStep(0);
       setLoadingText('Securely uploading to Firebase Storage...');
       
-      // Step 2: OCR Scan (after 800ms)
-      const t1 = setTimeout(() => {
+      // Step 2: OCR Scan (after 700ms)
+      t1 = setTimeout(() => {
         setCurrentStep(1);
         setLoadingText('OCR reading character pixels...');
       }, 700);
 
-      // Step 3: Extraction (after 1800ms)
-      const t2 = setTimeout(() => {
+      // Step 3: Extraction (after 1500ms)
+      t2 = setTimeout(() => {
         setCurrentStep(2);
         setLoadingText('Identifying billing tables & line items...');
       }, 1500);
 
-      // Step 4: Categorization (after 2800ms)
-      const t3 = setTimeout(() => {
+      // Step 4: Categorization (after 2300ms)
+      t3 = setTimeout(() => {
         setCurrentStep(3);
         setLoadingText('Contextually classifying expenses...');
       }, 2300);
 
-      // Step 5: Insights (after 3800ms)
-      const t4 = setTimeout(() => {
+      // Step 5: Insights (after 3000ms)
+      t4 = setTimeout(() => {
         setCurrentStep(4);
         setLoadingText('Aggregating statistics & double check anomalies...');
       }, 3000);
 
-      // Step 6: Finalize (after 4500ms)
-      const t5 = setTimeout(() => {
+      // Step 6: Finalize (after 3700ms)
+      t5 = setTimeout(() => {
         setCurrentStep(5);
         setLoadingText('Completing secure Firestore storage commit...');
       }, 3700);
+    };
 
-      // Trigger the actual OCR back-end processing
-      try {
-        await triggerOCR(id);
-      } catch (err) {
-        console.error(err);
-      }
+    runSimulation();
 
-      // Finish OCR (after 5000ms)
-      const t6 = setTimeout(() => {
+    // Trigger the actual OCR back-end processing
+    triggerOCR(id).catch(console.error);
+
+    return () => {
+      clearTimeout(t1);
+      clearTimeout(t2);
+      clearTimeout(t3);
+      clearTimeout(t4);
+      clearTimeout(t5);
+    };
+  }, [id]);
+
+  // Navigate dynamically only when currentInvoice status changes to completed or failed!
+  useEffect(() => {
+    if (!id || !currentInvoice) return;
+
+    if (currentInvoice.status === 'completed' || currentInvoice.status === 'failed') {
+      const navTimer = setTimeout(() => {
         confetti({
           particleCount: 100,
           spread: 60,
           colors: ['#22D3EE', '#7C5CFC', '#1ED760']
         });
         navigate(`/invoices/${id}`);
-      }, 4200);
+      }, 600);
 
-      return () => {
-        clearTimeout(t1);
-        clearTimeout(t2);
-        clearTimeout(t3);
-        clearTimeout(t4);
-        clearTimeout(t5);
-        clearTimeout(t6);
-      };
-    };
-
-    processOCR();
-  }, [id]);
+      return () => clearTimeout(navTimer);
+    }
+  }, [currentInvoice?.status, id, navigate]);
 
   return (
     <AppLayout>

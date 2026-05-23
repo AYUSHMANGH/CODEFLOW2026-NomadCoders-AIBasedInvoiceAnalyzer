@@ -1,4 +1,15 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { 
+  signInWithEmailAndPassword, 
+  createUserWithEmailAndPassword, 
+  signInWithPopup, 
+  GoogleAuthProvider, 
+  signOut, 
+  onAuthStateChanged,
+  updateProfile,
+  sendPasswordResetEmail
+} from 'firebase/auth';
+import { auth } from '../firebase';
 
 export interface UserProfile {
   uid: string;
@@ -22,66 +33,77 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const mapFirebaseUser = (firebaseUser: any, isGuest = false): UserProfile => {
+  return {
+    uid: firebaseUser.uid,
+    email: firebaseUser.email || '',
+    displayName: firebaseUser.displayName || firebaseUser.email?.split('@')[0] || 'User',
+    photoURL: firebaseUser.photoURL || `https://api.dicebear.com/7.x/adventurer/svg?seed=${firebaseUser.email || 'user'}`,
+    isGuest,
+    createdAt: firebaseUser.metadata.creationTime || new Date().toISOString()
+  };
+};
+
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [user, setUser] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
 
-  // Initialize and check for persistent local session
+  // Initialize and check for persistent Firebase auth session or Guest fallback
   useEffect(() => {
-    const savedSession = localStorage.getItem('financelens_session');
-    if (savedSession) {
-      try {
-        setUser(JSON.parse(savedSession));
-      } catch (e) {
-        localStorage.removeItem('financelens_session');
+    const unsubscribe = onAuthStateChanged(auth, (firebaseUser) => {
+      if (firebaseUser) {
+        const profile = mapFirebaseUser(firebaseUser, false);
+        setUser(profile);
+        localStorage.setItem('financelens_session', JSON.stringify(profile));
+      } else {
+        const savedSession = localStorage.getItem('financelens_session');
+        if (savedSession) {
+          try {
+            const parsed = JSON.parse(savedSession);
+            if (parsed.isGuest) {
+              setUser(parsed);
+            } else {
+              setUser(null);
+            }
+          } catch (e) {
+            setUser(null);
+          }
+        } else {
+          setUser(null);
+        }
       }
-    }
-    // Simulate initial loading shimmer
-    const timer = setTimeout(() => {
       setLoading(false);
-    }, 800);
-    return () => clearTimeout(timer);
+    });
+
+    return () => unsubscribe();
   }, []);
 
   const loginWithEmail = async (email: string, pass: string) => {
-    // Under real Firebase this runs signInWithEmailAndPassword.
-    // In our robust production setup, we handle simulated logins that persist statefully!
-    const mockUser: UserProfile = {
-      uid: 'user-' + Math.random().toString(36).substring(2, 9),
-      email,
-      displayName: email.split('@')[0].toUpperCase(),
-      photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${email}`,
-      isGuest: false,
-      createdAt: new Date().toISOString()
-    };
-    setUser(mockUser);
-    localStorage.setItem('financelens_session', JSON.stringify(mockUser));
+    const userCredential = await signInWithEmailAndPassword(auth, email, pass);
+    const profile = mapFirebaseUser(userCredential.user, false);
+    setUser(profile);
+    localStorage.setItem('financelens_session', JSON.stringify(profile));
   };
 
   const signupWithEmail = async (email: string, pass: string, name: string) => {
-    const mockUser: UserProfile = {
-      uid: 'user-' + Math.random().toString(36).substring(2, 9),
-      email,
-      displayName: name || email.split('@')[0],
-      photoURL: `https://api.dicebear.com/7.x/adventurer/svg?seed=${name}`,
-      isGuest: false,
-      createdAt: new Date().toISOString()
-    };
-    setUser(mockUser);
-    localStorage.setItem('financelens_session', JSON.stringify(mockUser));
+    const userCredential = await createUserWithEmailAndPassword(auth, email, pass);
+    await updateProfile(userCredential.user, {
+      displayName: name
+    });
+    // Force refresh the user object so it gets the newly set displayName
+    if (auth.currentUser) {
+      const profile = mapFirebaseUser(auth.currentUser, false);
+      setUser(profile);
+      localStorage.setItem('financelens_session', JSON.stringify(profile));
+    }
   };
 
   const loginWithGoogle = async () => {
-    const mockUser: UserProfile = {
-      uid: 'google-' + Math.random().toString(36).substring(2, 9),
-      email: 'investor.lens@gmail.com',
-      displayName: 'Alex Carter',
-      photoURL: 'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=100&auto=format&fit=crop&q=80',
-      isGuest: false,
-      createdAt: new Date().toISOString()
-    };
-    setUser(mockUser);
-    localStorage.setItem('financelens_session', JSON.stringify(mockUser));
+    const provider = new GoogleAuthProvider();
+    const userCredential = await signInWithPopup(auth, provider);
+    const profile = mapFirebaseUser(userCredential.user, false);
+    setUser(profile);
+    localStorage.setItem('financelens_session', JSON.stringify(profile));
   };
 
   const loginAsGuest = () => {
@@ -98,11 +120,13 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const logout = async () => {
+    await signOut(auth);
     setUser(null);
     localStorage.removeItem('financelens_session');
   };
 
   const resetPassword = async (email: string) => {
+    await sendPasswordResetEmail(auth, email);
     console.log('Reset link dispatched to:', email);
   };
 

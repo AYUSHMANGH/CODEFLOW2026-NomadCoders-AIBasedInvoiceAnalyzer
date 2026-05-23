@@ -119,7 +119,7 @@ export const Insights: React.FC = () => {
               </div>
               <div className="text-left font-mono">
                 <span className="text-[9px] text-slate-500 uppercase block">Cash Buffer</span>
-                <span className="text-sm font-bold text-cyan-glow">$42.8k</span>
+                <span className="text-sm font-bold text-cyan-glow">₹42.8k</span>
               </div>
               <div className="text-left font-mono">
                 <span className="text-[9px] text-slate-500 uppercase block">Score</span>
@@ -175,7 +175,7 @@ export const Insights: React.FC = () => {
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-white leading-none">Redundant SaaS</h5>
-                    <span className="text-[10px] text-error font-mono font-bold block mt-1">-$840/mo leakage</span>
+                    <span className="text-[10px] text-error font-mono font-bold block mt-1">-₹840/mo leakage</span>
                     <p className="text-[9px] text-slate-400 leading-relaxed mt-1">
                       AI detected 3 overlapping designer seats with identical permissions in marketing profiles.
                     </p>
@@ -188,7 +188,7 @@ export const Insights: React.FC = () => {
                   </div>
                   <div>
                     <h5 className="text-xs font-bold text-white leading-none">Vendor Terms</h5>
-                    <span className="text-[10px] text-[#1ED760] font-mono font-bold block mt-1">+$1.2k optimization</span>
+                    <span className="text-[10px] text-[#1ED760] font-mono font-bold block mt-1">+₹1.2k optimization</span>
                     <p className="text-[9px] text-slate-400 leading-relaxed mt-1">
                       Auditing net-10 payouts to Initech Corp yields a 2% prompt-payment discount index.
                     </p>
@@ -259,7 +259,7 @@ export const Insights: React.FC = () => {
                   <div>
                     <h5 className="text-xs font-bold text-white leading-none">Yield Optimization</h5>
                     <p className="text-[9px] text-slate-400 mt-1 leading-relaxed">
-                      Treasury bonds at **4.2%** yield index available for idle $150k reserve balance.
+                      Treasury bonds at **4.2%** yield index available for idle ₹150k reserve balance.
                     </p>
                   </div>
                 </div>
@@ -269,7 +269,7 @@ export const Insights: React.FC = () => {
                   <div>
                     <h5 className="text-xs font-bold text-white leading-none">Equity Buyback</h5>
                     <p className="text-[9px] text-slate-400 mt-1 leading-relaxed">
-                      Current low valuation cycles suggest deploying $50k mini-buyback schedule.
+                      Current low valuation cycles suggest deploying ₹50k mini-buyback schedule.
                     </p>
                   </div>
                 </div>
@@ -334,7 +334,7 @@ export const Insights: React.FC = () => {
               <div className="text-left">
                 <span className="text-[8px] font-mono text-slate-500 uppercase tracking-wider block">Projected 12-Month Result</span>
                 <h3 className="text-2xl font-mono font-extrabold text-white mt-1.5">
-                  +${projectedCash.toLocaleString()} <span className="text-xs text-success font-semibold">Available Cash</span>
+                  +₹{projectedCash.toLocaleString()} <span className="text-xs text-success font-semibold">Available Cash</span>
                 </h3>
                 <p className="text-[9px] text-slate-400 leading-relaxed mt-2">
                   Deploying this trajectory enables hiring 1 new senior associate or expanding physical facilities by Q4.

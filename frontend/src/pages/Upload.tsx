@@ -234,7 +234,7 @@ export const Upload: React.FC = () => {
                       <div>
                         <span className="text-[9px] text-slate-500 font-mono uppercase block">Total Cost</span>
                         <span className="text-lg font-mono font-extrabold text-white">
-                          ${recentInvoices[0].ocrResult.amount.toFixed(2)}
+                          ₹{(recentInvoices[0].ocrResult?.amount ?? 0).toFixed(2)}
                         </span>
                       </div>
                       <button

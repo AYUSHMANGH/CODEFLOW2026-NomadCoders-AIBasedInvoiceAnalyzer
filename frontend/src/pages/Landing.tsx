@@ -11,7 +11,10 @@ import {
   TrendingDown,
   Lock,
   ChevronDown,
-  Play
+  Play,
+  ShieldCheck,
+  Layers,
+  Fingerprint
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -83,8 +86,7 @@ export const Landing: React.FC = () => {
 
         <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-400">
           <a href="#features" className="hover:text-white transition-colors">Features</a>
-          <a href="#demo" className="hover:text-white transition-colors">How It Works</a>
-          <a href="#pricing" className="hover:text-white transition-colors">Pricing</a>
+          <a href="#security" className="hover:text-white transition-colors">Security</a>
           <a href="#faq" className="hover:text-white transition-colors">FAQ</a>
         </nav>
 
@@ -173,7 +175,7 @@ export const Landing: React.FC = () => {
               </div>
               <div className="text-left">
                 <span className="text-[9px] font-bold text-success uppercase block">Extraction Complete</span>
-                <p className="text-[9px] text-slate-400 leading-tight mt-0.5">Vendor: Amazon Web Services. Total: $4,299.12</p>
+                <p className="text-[9px] text-slate-400 leading-tight mt-0.5">Vendor: Amazon Web Services. Total: ₹4,299.12</p>
               </div>
             </div>
 
@@ -235,78 +237,97 @@ export const Landing: React.FC = () => {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section id="pricing" className="max-w-7xl mx-auto px-6 py-20 border-t border-glass-border relative z-20">
-        <div className="text-center mb-12">
-          <h2 className="text-3xl font-geist font-black text-white mb-2">Transparent pricing for scale</h2>
-          <p className="text-sm text-slate-400 max-w-md mx-auto">
-            Choose a roadmap that suits your business scale. Setup takes less than 2 minutes.
+      {/* Security & Enterprise Social Proof Section */}
+      <section id="security" className="max-w-7xl mx-auto px-6 py-20 border-t border-glass-border relative z-20">
+        <div className="text-center mb-16">
+          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 border border-success/20 text-success text-[10px] font-bold font-mono uppercase tracking-wider mb-4 animate-pulse">
+            🛡️ Bank-Grade Compliance
+          </div>
+          <h2 className="text-3xl font-geist font-black text-white mb-3">Enterprise Trust & Ironclad Security</h2>
+          <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+            FinanceLens AI meets rigorous institutional auditing standards and operates under state-of-the-art security protocols to protect your corporate treasury logs.
           </p>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto items-stretch">
-          <GlassCard className="flex flex-col justify-between hoverEffect border border-glass-border">
-            <div>
-              <span className="text-[10px] font-mono text-slate-500 uppercase">Starter</span>
-              <h3 className="text-2xl font-bold text-white mt-1">$0</h3>
-              <p className="text-[11px] text-slate-400 mt-2 mb-6">Perfect to test sandbox metrics</p>
-              <ul className="text-xs flex flex-col gap-3 text-slate-300 text-left">
-                <li>✓ Local Sandbox Mode</li>
-                <li>✓ 5 Uploads per Month</li>
-                <li>✓ Standard AI OCR Scanning</li>
-                <li>✓ Export to JSON/CSV</li>
-              </ul>
+        {/* Brand Logos Wall */}
+        <div className="mb-20">
+          <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest text-center mb-8">Trusted by scale-focused companies</p>
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 items-center justify-items-center opacity-60">
+            {/* Linear-like Logo */}
+            <div className="flex items-center gap-2 hover:opacity-100 transition-opacity duration-300">
+              <div className="w-5 h-5 rounded-md bg-white text-slate-950 flex items-center justify-center font-bold text-xs font-mono">L</div>
+              <span className="font-geist font-bold text-sm tracking-tight text-white">LINEAR</span>
             </div>
-            <button
-              onClick={handleGetStarted}
-              className="w-full py-2.5 mt-8 bg-glass-bg border border-glass-border text-white text-xs font-bold rounded-xl cursor-pointer"
-            >
-              Sign Up Free
-            </button>
+            {/* Stripe-like Logo */}
+            <div className="flex items-center gap-1.5 hover:opacity-100 transition-opacity duration-300">
+              <span className="font-geist font-black text-lg tracking-tighter text-white">stripe</span>
+            </div>
+            {/* Vercel-like Logo */}
+            <div className="flex items-center gap-2 hover:opacity-100 transition-opacity duration-300">
+              <svg className="w-4 h-4 fill-white" viewBox="0 0 75 65"><path d="M37.5 0 L75 65 L0 65 Z" /></svg>
+              <span className="font-geist font-bold text-sm tracking-tight text-white font-mono">VERCEL</span>
+            </div>
+            {/* Supabase-like Logo */}
+            <div className="flex items-center gap-2 hover:opacity-100 transition-opacity duration-300">
+              <span className="text-emerald-400 font-bold">⚡</span>
+              <span className="font-geist font-bold text-sm tracking-tight text-white">supabase</span>
+            </div>
+            {/* Retool-like Logo */}
+            <div className="flex items-center gap-2 hover:opacity-100 transition-opacity duration-300">
+              <div className="w-4.5 h-4.5 border-2 border-dashed border-white rounded-md" />
+              <span className="font-geist font-bold text-sm tracking-tight text-white font-mono">RETOOL</span>
+            </div>
+          </div>
+        </div>
+
+        {/* Security Badges Grid */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
+          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+            <div className="w-10 h-10 rounded-xl bg-success/15 flex items-center justify-center text-success border border-success/20">
+              <ShieldCheck className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-white">SOC 2 Type II Certified</h3>
+              <p className="text-[11px] text-slate-400 leading-relaxed mt-2">
+                Undergoes continuous independent audits to ensure our security controls meet the highest AICPA Trust Services Criteria.
+              </p>
+            </div>
           </GlassCard>
 
-          <GlassCard className="flex flex-col justify-between hoverEffect border-2 border-primary/50 relative shadow-2xl shadow-primary/10">
-            <span className="absolute -top-3 left-1/2 -translate-x-1/2 px-3 py-0.5 rounded-full bg-primary text-slate-950 font-bold text-[9px] uppercase tracking-wider font-mono">
-              Most Popular
-            </span>
-            <div>
-              <span className="text-[10px] font-mono text-primary-glow uppercase">Professional</span>
-              <h3 className="text-2xl font-bold text-white mt-1">$49<span className="text-sm text-slate-400">/mo</span></h3>
-              <p className="text-[11px] text-slate-400 mt-2 mb-6">Ideal for active SMB finance teams</p>
-              <ul className="text-xs flex flex-col gap-3 text-slate-300 text-left">
-                <li>✓ Real Cloud Storage & Sync</li>
-                <li>✓ Unlimited Invoice Uploads</li>
-                <li>✓ Multi-page OCR Deep Scan</li>
-                <li>✓ Zen AI Analyst chat consultations</li>
-                <li>✓ Duplicates & Anomalies engine</li>
-              </ul>
+          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+            <div className="w-10 h-10 rounded-xl bg-cyan/15 flex items-center justify-center text-cyan border border-cyan/20">
+              <Lock className="w-5 h-5" />
             </div>
-            <button
-              onClick={handleGetStarted}
-              className="w-full py-2.5 mt-8 bg-primary text-slate-950 text-xs font-bold rounded-xl cursor-pointer shadow-lg shadow-primary/20"
-            >
-              Start Free Trial
-            </button>
+            <div>
+              <h3 className="text-sm font-extrabold text-white">AES-256 Encryption</h3>
+              <p className="text-[11px] text-slate-400 leading-relaxed mt-2">
+                All uploaded documents and parsed financial metadata are encrypted at rest with AES-256 and in transit via TLS 1.3.
+              </p>
+            </div>
           </GlassCard>
 
-          <GlassCard className="flex flex-col justify-between hoverEffect border border-glass-border">
-            <div>
-              <span className="text-[10px] font-mono text-slate-500 uppercase">Enterprise</span>
-              <h3 className="text-2xl font-bold text-white mt-1">Custom</h3>
-              <p className="text-[11px] text-slate-400 mt-2 mb-6">Tailored for complex compliance audits</p>
-              <ul className="text-xs flex flex-col gap-3 text-slate-300 text-left">
-                <li>✓ Custom API Endpoint integrations</li>
-                <li>✓ Dedicated LLM OCR fine-tuning</li>
-                <li>✓ Multi-seat Accountant permissions</li>
-                <li>✓ 24/7 SLA Audit Assurances</li>
-              </ul>
+          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+            <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary border border-primary/20">
+              <Layers className="w-5 h-5" />
             </div>
-            <button
-              onClick={() => alert('Our Enterprise desk is routed to sales@financelens.ai.')}
-              className="w-full py-2.5 mt-8 bg-glass-bg border border-glass-border text-white text-xs font-bold rounded-xl cursor-pointer"
-            >
-              Contact Desk
-            </button>
+            <div>
+              <h3 className="text-sm font-extrabold text-white">ISO 27001 Governance</h3>
+              <p className="text-[11px] text-slate-400 leading-relaxed mt-2">
+                Operates within a formalized Information Security Management System (ISMS) protecting asset integrity and user operations.
+              </p>
+            </div>
+          </GlassCard>
+
+          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+            <div className="w-10 h-10 rounded-xl bg-secondary/15 flex items-center justify-center text-secondary border border-secondary/20">
+              <Fingerprint className="w-5 h-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-extrabold text-white">Zero-Train Privacy</h3>
+              <p className="text-[11px] text-slate-400 leading-relaxed mt-2">
+                Strict data boundaries apply. Your parsed receipt entries and logs are never utilized to pre-train public foundational AI models.
+              </p>
+            </div>
           </GlassCard>
         </div>
       </section>

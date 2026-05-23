@@ -1,21 +1,13 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
 import * as fs from 'fs';
+import * as path from 'path';
+const pdf: any = require('pdf-parse');
 
-// Check for Gemini API key
-const GEMINI_API_KEY = process.env.GEMINI_API_KEY || '';
-let aiClient: any = null;
-
-if (GEMINI_API_KEY) {
-  try {
-    // Standard initialization of GoogleGenerativeAI client
-    aiClient = new GoogleGenerativeAI(GEMINI_API_KEY);
-  } catch (error) {
-    console.error('Failed to initialize Google Gen AI Client:', error);
-  }
-}
-
+// Check for Groq API key
+const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 
 export interface ExtractedInvoice {
+  isValidInvoice: boolean;
+  validationError?: string;
   merchant: string;
   date: string;
   invoiceNumber: string;
@@ -50,10 +42,89 @@ const CATEGORIES = [
 ];
 
 /**
+ * Helper: Query Groq API
+ */
+async function queryGroq(messages: any[], model: string, responseFormatJson: boolean = false): Promise<string> {
+  const url = 'https://api.groq.com/openai/v1/chat/completions';
+  const body: any = {
+    model: model,
+    messages: messages,
+    temperature: 0.1
+  };
+  if (responseFormatJson) {
+    body.response_format = { type: 'json_object' };
+  }
+
+  const response = await fetch(url, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${GROQ_API_KEY}`
+    },
+    body: JSON.stringify(body)
+  });
+
+  if (!response.ok) {
+    const errText = await response.text();
+    throw new Error(`Groq API responded with status ${response.status}: ${errText}`);
+  }
+
+  const data: any = await response.json();
+  return data.choices[0]?.message?.content || '';
+}
+
+/**
+ * Helper: Parse filename or text to find mock invoice styles
+ */
+function isMockFileValidInvoice(fileName: string): { isValid: boolean; errorMsg?: string } {
+  const name = fileName.toLowerCase();
+  const ext = path.extname(name);
+  const isAllowedExt = ['.pdf', '.png', '.jpg', '.jpeg'].includes(ext);
+  
+  if (!isAllowedExt && ext !== '') {
+    return {
+      isValid: false,
+      errorMsg: `The file extension "${ext}" is not supported. FinanceLens AI currently supports PDF, PNG, and JPEG documents under 25MB.`
+    };
+  }
+
+  const invalidKeywords = ['cat', 'dog', 'notes', 'unrelated', 'book', 'sample-text', 'code', 'script', 'todo', 'photo', 'avatar', 'logo'];
+  const matchedInvalid = invalidKeywords.find(kw => name.includes(kw));
+
+  if (matchedInvalid) {
+    return {
+      isValid: false,
+      errorMsg: `Verification failed: The document appears to contain "${matchedInvalid}" content. Only clear receipts, bills, and SaaS statements are supported. Please ensure you upload a valid financial invoice showing merchant, date, and items.`
+    };
+  }
+
+  return { isValid: true };
+}
+
+/**
  * Helper: Parse filename or text to find mock invoice styles
  */
 function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer): ExtractedInvoice {
   const name = fileName.toLowerCase();
+  
+  const check = isMockFileValidInvoice(fileName);
+  if (!check.isValid) {
+    return {
+      isValidInvoice: false,
+      validationError: check.errorMsg,
+      merchant: 'N/A',
+      date: new Date().toISOString().split('T')[0],
+      invoiceNumber: 'N/A',
+      amount: 0,
+      currency: 'USD',
+      tax: 0,
+      confidence: 0,
+      category: 'Shopping',
+      items: [],
+      anomalyDetected: false,
+      isSubscription: false
+    };
+  }
   
   let merchant = 'General Merchant';
   let category = 'Shopping';
@@ -88,7 +159,6 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
       { name: 'Roundtrip Ticket: JFK to SFO (Economy)', quantity: 1, price: 782.00, total: 782.00 },
       { name: 'Cabin Baggage Fee & Seat Selection', quantity: 1, price: 68.00, total: 68.00 }
     ];
-    // Check if amount matches our anomaly conditions
     anomalyDetected = true;
     anomalyDescription = 'Potential duplicate booking or high-value expense above the category 30-day average (+122%).';
   } else if (name.includes('kitchen') || name.includes('food') || name.includes('cafe') || name.includes('restaurant')) {
@@ -165,11 +235,12 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
   const dateStr = dateObj.toISOString().split('T')[0];
 
   return {
+    isValidInvoice: true,
     merchant,
     date: dateStr,
     invoiceNumber,
     amount,
-    currency: 'USD',
+    currency: 'INR',
     tax,
     confidence: parseFloat((95 + Math.random() * 4.9).toFixed(1)), // 95% - 99.9%
     category,
@@ -181,27 +252,30 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
 }
 
 /**
- * Service: Extract data from file (OCR + key-value extraction)
+ * Service: Extract data from file (OCR + key-value extraction using Groq API)
  */
 export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, fileType?: string): Promise<ExtractedInvoice> {
-  // If real Gemini is enabled
-  if (aiClient) {
+  if (GROQ_API_KEY) {
     try {
-      const model = aiClient.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      
-      let prompt = `
+      const prompt = `
         You are a highly advanced FinTech OCR and financial audit intelligence agent.
         Your task is to extract exact billing information from this invoice/receipt document.
+        
+        FIRST, evaluate whether the document is a valid financial record (e.g., an invoice, bill, receipt, purchase order, credit invoice, or SaaS transaction statement).
+        If it is a generic photo, textbook, code file, text note, or completely unrelated document/image, you MUST set "isValidInvoice" to false, and explain what is expected in "validationError".
+        
         Analyze the text or image contents and extract the following JSON schema:
         {
-          "merchant": "Exact Name of the business/merchant",
-          "date": "YYYY-MM-DD format (if only year/month is clear, approximate or extract as is)",
-          "invoiceNumber": "The invoice or receipt number",
-          "amount": number (Total invoice value, float),
-          "currency": "3-letter currency code, default USD",
-          "tax": number (Total tax amount, float. If none, extract 0)",
+          "isValidInvoice": boolean (set true if it is a valid receipt, bill, or invoice showing commercial exchange; set false otherwise),
+          "validationError": "A friendly, professional, actionable error message explaining why the document is not an invoice and what the requisites are (e.g. 'The uploaded document appears to be a generic photo of a landscape. FinanceLens AI requires a clearly legible receipt, bill, or SaaS statement displaying a merchant name, billing date, and transaction totals.') if isValidInvoice is false; otherwise null",
+          "merchant": "Exact Name of the business/merchant (empty if isValidInvoice is false)",
+          "date": "YYYY-MM-DD format (if only year/month is clear, approximate or extract as is, empty if isValidInvoice is false)",
+          "invoiceNumber": "The invoice or receipt number (empty if isValidInvoice is false)",
+          "amount": number (Total invoice value, float, 0 if isValidInvoice is false),
+          "currency": "3-letter currency code, default INR",
+          "tax": number (Total tax amount, float. If none, extract 0, 0 if isValidInvoice is false),
           "confidence": number (your confidence score from 0 to 100, float),
-          "category": "Must be exactly one of: Food, Shopping, Travel, Medical, Utilities, Entertainment, Subscriptions, Education",
+          "category": "Must be exactly one of: Food, Shopping, Travel, Medical, Utilities, Entertainment, Subscriptions, Education (Shopping if isValidInvoice is false)",
           "items": [
             {
               "name": "Line item name",
@@ -215,33 +289,74 @@ export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, 
           "isSubscription": boolean (set true if this appears to be a monthly recurring subscription, e.g. SaaS platforms, cloud tools, utility contracts)
         }
 
-        Only return the raw JSON object. Do not include markdown code block syntax (like \`\`\`json). Just the raw parsable JSON.
+        Only return a valid, raw JSON object. Do not wrap it in markdown formatting or include \`\`\`json. Just the raw parsable JSON matching the schema precisely.
       `;
 
-      let result;
+      let modelToUse = 'llama-3.3-70b-versatile';
+      let messages: any[] = [];
+
       if (fileBuffer && fileType) {
-        // Send image/pdf to Gemini
-        const base64Data = fileBuffer.toString('base64');
-        result = await model.generateContent([
-          prompt,
-          {
-            inlineData: {
-              data: base64Data,
-              mimeType: fileType
+        if (fileType === 'application/pdf') {
+          // Parse PDF using pdf-parse package
+          const parsed = await pdf(fileBuffer);
+          const extractedText = parsed.text || '';
+          messages = [
+            {
+              role: 'user',
+              content: `${prompt}\n\nHere is the raw text content parsed from the PDF invoice:\n\n${extractedText}`
             }
-          }
-        ]);
-      } else {
-        // Text fallback
-        result = await model.generateContent(prompt);
+          ];
+        } else if (fileType.startsWith('image/')) {
+          // Parse image using llama-3.2 vision model on Groq
+          modelToUse = 'llama-3.2-11b-vision-preview';
+          const base64Data = fileBuffer.toString('base64');
+          messages = [
+            {
+              role: 'user',
+              content: [
+                {
+                  type: 'text',
+                  text: prompt
+                },
+                {
+                  type: 'image_url',
+                  image_url: {
+                    url: `data:${fileType};base64,${base64Data}`
+                  }
+                }
+              ]
+            }
+          ];
+        }
       }
 
-      const text = result.response.text().trim();
-      const cleanJsonStr = text.replace(/^```json\s*/i, '').replace(/```$/, '').trim();
+      if (messages.length === 0) {
+        // Fallback text reasoning based on filename
+        messages = [
+          {
+            role: 'user',
+            content: `${prompt}\n\nFilename: ${fileName}`
+          }
+        ];
+      }
+
+      const responseText = await queryGroq(messages, modelToUse, true);
+      const cleanJsonStr = responseText.trim();
       const extracted: ExtractedInvoice = JSON.parse(cleanJsonStr);
+
+      // Sanitize items just in case
+      if (extracted.items && Array.isArray(extracted.items)) {
+        extracted.items = extracted.items.map(item => ({
+          name: item.name || 'Line Item',
+          quantity: typeof item.quantity === 'number' ? item.quantity : 1,
+          price: typeof item.price === 'number' ? item.price : 0,
+          total: typeof item.total === 'number' ? item.total : 0
+        }));
+      }
+
       return extracted;
     } catch (error) {
-      console.error('Gemini OCR extraction failed, falling back to high-fidelity engine:', error);
+      console.error('Groq OCR extraction failed, falling back to high-fidelity engine:', error);
     }
   }
 
@@ -265,8 +380,7 @@ export function generateInsightsFromInvoices(invoices: any[], monthlyBudgetLimit
     categoryGroup[cat] = (categoryGroup[cat] || 0) + amt;
   });
 
-  // Calculate budget score (0 - 1000 scale, modeled as requested)
-  // Base 1000, subtract proportional spend against budget
+  // Calculate budget score (0 - 1000 scale)
   let budgetScore = 1000;
   if (monthlyBudgetLimit > 0) {
     const percentage = totalSpend / monthlyBudgetLimit;
@@ -279,12 +393,9 @@ export function generateInsightsFromInvoices(invoices: any[], monthlyBudgetLimit
     }
   }
   
-  // Constraints check
   const alerts: Array<{ category: string; amount: number; threshold: number; percentage: number }> = [];
   const recommendations: Array<{ title: string; description: string; impact: 'High' | 'Medium' | 'Low'; category: string }> = [];
   
-  // Rule: If spending > average (e.g. standard category threshold)
-  // Rule: If category > 40% of total spending, show alert
   Object.keys(categoryGroup).forEach((cat) => {
     const amt = categoryGroup[cat];
     const pct = totalSpend > 0 ? (amt / totalSpend) * 100 : 0;
@@ -313,26 +424,26 @@ export function generateInsightsFromInvoices(invoices: any[], monthlyBudgetLimit
   if (totalSubSpend > 0) {
     recommendations.push({
       title: 'Analyze Recurring Subscriptions',
-      description: `You have ${subs.length} active recurring subscription(s) totaling $${totalSubSpend.toFixed(2)} this month. Consider switching to annual billing to save up to 20%.`,
+      description: `You have ${subs.length} active recurring subscription(s) totaling ₹${totalSubSpend.toFixed(2)} this month. Consider switching to annual billing to save up to 20%.`,
       impact: 'Medium',
       category: 'Subscriptions'
     });
   }
 
   // Generic savings opportunity estimation
-  const savingsOpportunity = parseFloat((totalSpend * 0.12).toFixed(2)); // estimated 12% savings index
+  const savingsOpportunity = parseFloat((totalSpend * 0.12).toFixed(2));
   
   if (savingsOpportunity > 50) {
     recommendations.push({
       title: 'Optimize SaaS Idle Capacity',
-      description: 'AI auditing detected under-utilized cloud seats and overlapping communication plans. De-provision 3 seats for a return of $840/year.',
+      description: 'AI auditing detected under-utilized cloud seats and overlapping communication plans. De-provision 3 seats for a return of ₹840/year.',
       impact: 'High',
       category: 'Utilities'
     });
   }
 
-  // Pre-baked or AI-generated summary
-  let recentSummary = `You have audited ${count} invoice(s) this billing cycle, representing a total expenditure of $${totalSpend.toFixed(2)}. `;
+  // Pre-baked summary
+  let recentSummary = `You have audited ${count} invoice(s) this billing cycle, representing a total expenditure of ₹${totalSpend.toFixed(2)}. `;
   if (budgetScore > 800) {
     recentSummary += `Your financial health index is exceptional at ${budgetScore}/1000. Under-utilization has kept your burn rate perfectly optimized.`;
   } else if (budgetScore > 500) {
@@ -359,25 +470,16 @@ export async function getAdvisorChatResponse(query: string, invoices: any[], cha
   const q = query.toLowerCase().trim();
   const totalSpend = invoices.reduce((sum, inv) => sum + (inv.ocrResult?.amount || 0), 0);
   
-  if (aiClient) {
+  if (GROQ_API_KEY) {
     try {
-      const model = aiClient.getGenerativeModel({ model: 'gemini-1.5-flash' });
-      
       const invoiceSummaries = invoices.map(inv => {
-        return `- Invoice ${inv.ocrResult?.invoiceNumber} from ${inv.ocrResult?.merchant} on ${inv.ocrResult?.date}: $${inv.ocrResult?.amount} (${inv.ocrResult?.category})`;
+        return `- Invoice ${inv.ocrResult?.invoiceNumber} from ${inv.ocrResult?.merchant} on ${inv.ocrResult?.date}: ₹${inv.ocrResult?.amount} (${inv.ocrResult?.category})`;
       }).join('\n');
-
-      const chatSession = model.startChat({
-        history: chatHistory.map(ch => ({
-          role: ch.role === 'assistant' ? 'model' : 'user',
-          parts: [{ text: ch.content }]
-        }))
-      });
 
       const systemContext = `
         You are "Zen AI Analyst", a premium, friendly, yet highly analytical financial advisor embedded inside the FinanceLens AI SaaS platform.
         You have direct visibility into the user's uploaded invoices and expenses:
-        Total Spend Audited: $${totalSpend}
+        Total Spend Audited: ₹${totalSpend}
         
         List of Invoices:
         ${invoiceSummaries}
@@ -388,11 +490,25 @@ export async function getAdvisorChatResponse(query: string, invoices: any[], cha
         Keep your response moderately concise (under 250 words) and premium.
       `;
 
-      const result = await chatSession.sendMessage(`${systemContext}\n\nUser Question: ${query}`);
-      const reply = result.response.text().trim();
+      const groqHistory = [
+        {
+          role: 'system',
+          content: systemContext
+        },
+        ...chatHistory.map(ch => ({
+          role: ch.role === 'assistant' ? 'assistant' : 'user',
+          content: ch.content
+        })),
+        {
+          role: 'user',
+          content: query
+        }
+      ];
+
+      const responseText = await queryGroq(groqHistory, 'llama-3.3-70b-versatile', false);
       
       return {
-        message: reply,
+        message: responseText.trim(),
         suggestedPrompts: [
           'How to increase my savings buffer?',
           'Audit my recurring subscriptions',
@@ -400,22 +516,22 @@ export async function getAdvisorChatResponse(query: string, invoices: any[], cha
         ]
       };
     } catch (e) {
-      console.error('Gemini Chat failed, running mock response:', e);
+      console.error('Groq Chat failed, running mock response:', e);
     }
   }
 
   // Stateful/Rule-based high-fidelity advisor mock
   await new Promise((resolve) => setTimeout(resolve, 1000));
 
-  let reply = `I have analyzed your **FinanceLens AI Workspace** (Total spend audited: **$${totalSpend.toFixed(2)}** across **${invoices.length} invoices**). `;
+  let reply = `I have analyzed your **FinanceLens AI Workspace** (Total spend audited: **₹${totalSpend.toFixed(2)}** across **${invoices.length} invoices**). `;
   let suggestedPrompts = ['Where am I overspending?', 'How to save?', 'Monthly summary'];
 
   if (q.includes('overspend') || q.includes('leak') || q.includes('spend')) {
     reply += `
 Based on Q3 transaction logs, you are experiencing spending spikes in **Professional Services and SaaS Utilities**:
 *   **Professional Services**: Up by **22%** this quarter. This was heavily driven by recent legal retainer adjustments.
-*   **Overlapping Subscriptions**: Figma Inc. ($120.00) and other communication suites represent a high concentration (**45%**) of your operating overhead.
-*   **Anomalies Detected**: A flagged high-value invoice of **$850.00** from **Delta Air Lines** is currently under review for potential booking duplicates.
+*   **Overlapping Subscriptions**: Figma Inc. (₹120.00) and other communication suites represent a high concentration (**45%**) of your operating overhead.
+*   **Anomalies Detected**: A flagged high-value invoice of **₹850.00** from **Delta Air Lines** is currently under review for potential booking duplicates.
 
 **Recommendation**: Let's audit these 3 seats in Figma, and reprocess the Delta Air Lines invoice to verify if there was a duplicate credit.
     `;
@@ -423,8 +539,8 @@ Based on Q3 transaction logs, you are experiencing spending spikes in **Professi
   } else if (q.includes('save') || q.includes('optimize') || q.includes('recommend')) {
     reply += `
 Here is a structured **Savings Blueprint** based on your current cash outflows:
-1.  **De-provision Idle Licenses**: AI analysis shows 3 seats in **Figma Inc.** are inactive. Savings: **+$840/year**.
-2.  **Rep negotiate AWS Hosting**: Moving from on-demand S3 structures to standard reserved instances would trim cloud overhead by **12%**. Savings: **+$178/month**.
+1.  **De-provision Idle Licenses**: AI analysis shows 3 seats in **Figma Inc.** are inactive. Savings: **+₹840/year**.
+2.  **Rep negotiate AWS Hosting**: Moving from on-demand S3 structures to standard reserved instances would trim cloud overhead by **12%**. Savings: **+₹178/month**.
 3.  **Consolidate Food Catering**: The Modern Kitchen catering logs show frequent small orders. Ordering monthly batch catering reduces transaction and courier fees by **15%**.
 
 Would you like to open the **Scenario Simulator** to calculate Q4 yields if these strategies are deployed?
@@ -433,11 +549,11 @@ Would you like to open the **Scenario Simulator** to calculate Q4 yields if thes
   } else if (q.includes('summary') || q.includes('monthly') || q.includes('report')) {
     reply += `
 Here is your **Executive Summary** for the current billing cycle:
-*   **Total Outflows**: $${totalSpend.toFixed(2)}
+*   **Total Outflows**: ₹${totalSpend.toFixed(2)}
 *   **Audited Items**: ${invoices.length} Receipts / Invoices processed
 *   **Finance Health Index**: **840 / 1000 (Optimized for Q3 Expansion)**
 *   **Flagged Anomalies**: 2 items under manual review.
-*   **Savings Potential**: $${(totalSpend * 0.12).toFixed(2)} (approx. 12% in operational leaks)
+*   **Savings Potential**: ₹${(totalSpend * 0.12).toFixed(2)} (approx. 12% in operational leaks)
 
 Your budget is in strong standing. Overspending in travel and dining is currently balanced out by optimized office and hardware utility management.
     `;

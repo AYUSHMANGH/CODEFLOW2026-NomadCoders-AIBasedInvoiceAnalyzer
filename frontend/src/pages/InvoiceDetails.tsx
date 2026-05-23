@@ -16,7 +16,10 @@ import {
   Calendar,
   Layers,
   ArrowRight,
-  Bookmark
+  Bookmark,
+  Loader2,
+  IndianRupee,
+  HelpCircle
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -39,6 +42,13 @@ export const InvoiceDetails: React.FC = () => {
   const [downloadSuccess, setDownloadSuccess] = useState(false);
 
   const currentInvoice = invoices.find(inv => inv.id === id);
+
+  const handleDelete = async () => {
+    if (currentInvoice && window.confirm('Delete this invoice permanently?')) {
+      await deleteInvoiceDoc(currentInvoice.id);
+      navigate('/expenses');
+    }
+  };
 
   const { register, handleSubmit, control, reset, watch, setValue } = useForm<FormValues>({
     defaultValues: {
@@ -84,6 +94,80 @@ export const InvoiceDetails: React.FC = () => {
     );
   }
 
+  if (currentInvoice.status === 'processing' || currentInvoice.status === 'uploading') {
+    return (
+      <AppLayout>
+        <div className="max-w-xl mx-auto py-24 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-cyan/15 border border-cyan/35 flex items-center justify-center text-cyan mb-6 animate-spin">
+            <Loader2 className="w-8 h-8 animate-spin" />
+          </div>
+
+          <GlassCard className="w-full border border-glass-border bg-gradient-to-b from-[#0F172A] to-[#051424] !p-8 text-center shadow-2xl">
+            <h2 className="text-xl font-geist font-black text-white mb-2">Analyzing Invoice</h2>
+            <span className="text-[9px] font-mono text-cyan-glow uppercase tracking-widest block mb-4">OCR Extraction Pipeline Active</span>
+            <p className="text-xs text-slate-400 leading-relaxed">
+              We are currently running high-precision text character grids scanning and resolving billing structures using our Groq Llama AI engine. This page will automatically update once extraction is completed.
+            </p>
+          </GlassCard>
+        </div>
+      </AppLayout>
+    );
+  }
+
+  if (currentInvoice.status === 'failed') {
+    return (
+      <AppLayout>
+        <div className="max-w-xl mx-auto py-12 flex flex-col items-center">
+          <div className="w-16 h-16 rounded-full bg-rose-500/10 border border-rose-500/25 flex items-center justify-center text-rose-400 mb-6 animate-pulse">
+            <HelpCircle className="w-8 h-8" />
+          </div>
+
+          <GlassCard className="w-full border border-glass-border bg-gradient-to-b from-[#0F172A] to-[#051424] !p-8 text-center shadow-2xl">
+            <h2 className="text-xl font-geist font-black text-white mb-2">Invalid Billing Record</h2>
+            <span className="text-[9px] font-mono text-slate-500 uppercase tracking-widest block mb-6">Extraction Failed</span>
+
+            <p className="text-xs text-slate-400 leading-relaxed mb-6 bg-rose-950/20 border border-rose-900/30 p-4 rounded-xl text-left">
+              {currentInvoice.ocrResult?.validationError || 'The uploaded file does not match a valid billing receipt or corporate statement.'}
+            </p>
+
+            <div className="text-left border-t border-[#1E293B] pt-5 mt-5">
+              <h4 className="text-xs font-bold text-white mb-3">Requisites of a valid record:</h4>
+              <ul className="text-[11px] text-slate-400 flex flex-col gap-2.5">
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan font-bold">•</span>
+                  <span><strong>Supported Document Type:</strong> The file must be a commercial receipt, purchase order, utility bill, or software license invoice.</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan font-bold">•</span>
+                  <span><strong>Legible Information:</strong> Key business context must be visible (e.g. business merchant header, transaction date, line items, and totals).</span>
+                </li>
+                <li className="flex items-start gap-2">
+                  <span className="text-cyan font-bold">•</span>
+                  <span><strong>Format Details:</strong> High resolution images (PNG, JPG, JPEG) or PDF documents up to 25MB max size.</span>
+                </li>
+              </ul>
+            </div>
+
+            <div className="flex gap-4 mt-8 w-full">
+              <button
+                onClick={() => navigate('/upload')}
+                className="flex-1 py-3 bg-gradient-to-r from-cyan to-primary text-slate-950 font-extrabold rounded-xl text-xs cursor-pointer shadow-lg shadow-cyan/15 hover:shadow-cyan/35 transition-all text-center"
+              >
+                Try Re-uploading
+              </button>
+              <button
+                onClick={handleDelete}
+                className="px-6 py-3 border border-rose-500/20 hover:bg-rose-500/10 text-rose-400 font-bold rounded-xl text-xs transition-all cursor-pointer"
+              >
+                Delete File
+              </button>
+            </div>
+          </GlassCard>
+        </div>
+      </AppLayout>
+    );
+  }
+
   const onSubmit = async (data: FormValues) => {
     // Re-verify items sums and update context
     await updateInvoiceMeta(currentInvoice.id, {
@@ -109,13 +193,6 @@ export const InvoiceDetails: React.FC = () => {
       console.error(e);
     } finally {
       setReprocessing(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (window.confirm('Delete this invoice permanently?')) {
-      await deleteInvoiceDoc(currentInvoice.id);
-      navigate('/expenses');
     }
   };
 
@@ -210,7 +287,7 @@ export const InvoiceDetails: React.FC = () => {
                 <div className="text-right font-mono">
                   <span className="text-[9px] text-slate-500 uppercase block">Total Billing</span>
                   <span className="text-md font-extrabold text-white">
-                    ${currentInvoice.ocrResult?.amount.toFixed(2) || '0.00'}
+                    ₹{(currentInvoice.ocrResult?.amount ?? 0).toFixed(2)}
                   </span>
                 </div>
               </div>
@@ -311,9 +388,9 @@ export const InvoiceDetails: React.FC = () => {
 
                   {/* Billing Amount */}
                   <div className="flex flex-col gap-1.5">
-                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider pl-1">Total Amount (USD)</label>
+                    <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider pl-1">Total Amount (INR, ₹)</label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                      <IndianRupee className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
                       <input
                         type="number"
                         step="0.01"
@@ -327,7 +404,7 @@ export const InvoiceDetails: React.FC = () => {
                   <div className="flex flex-col gap-1.5">
                     <label className="text-[9px] font-mono text-slate-400 uppercase tracking-wider pl-1">Total VAT / Tax Paid</label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
+                      <IndianRupee className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
                       <input
                         type="number"
                         step="0.01"
@@ -393,7 +470,7 @@ export const InvoiceDetails: React.FC = () => {
                           />
                         </div>
                         <div className="col-span-2 font-mono text-[11px] text-white font-bold text-center">
-                          ${(watch(`items.${idx}.quantity`) * watch(`items.${idx}.price`) || 0).toFixed(2)}
+                          ₹{(watch(`items.${idx}.quantity`) * watch(`items.${idx}.price`) || 0).toFixed(2)}
                         </div>
                         <div className="col-span-1 text-right">
                           <button
