@@ -54,7 +54,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
 
       <aside
         className={`
-          w-64 bg-[#051424] border-r border-[#1E293B] flex flex-col justify-between p-6 shrink-0 z-50
+          w-64 zen-sidebar flex flex-col justify-between p-6 shrink-0 z-50
           transition-transform duration-300 ease-in-out
           
           /* Desktop Layout */
@@ -76,7 +76,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           </div>
 
           {/* User Card */}
-          <div className="p-3 bg-glass-bg border border-glass-border rounded-2xl flex items-center gap-3">
+          <div className="zen-glass-card !p-3 flex items-center gap-3">
             <img
               src={user.photoURL}
               alt={user.displayName}
@@ -106,8 +106,8 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
                     flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 w-full
                     ${
                       isActive
-                        ? 'bg-gradient-to-r from-primary/25 to-secondary/15 border-l-4 border-primary text-white shadow-md shadow-primary/5'
-                        : 'text-slate-400 hover:text-white hover:bg-glass-bg border-l-4 border-transparent'
+                        ? 'bg-gradient-to-r from-[#3b82f6]/30 to-[#a855f7]/20 border-l-4 border-cyan text-white zen-sidebar-glow'
+                        : 'text-slate-400 hover:text-white hover:bg-white/5 border-l-4 border-transparent'
                     }
                   `}
                 >
@@ -121,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
           {/* Quick New Analysis Action button */}
           <button
             onClick={() => { navigate('/upload'); onClose?.(); }}
-            className="w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-xl bg-gradient-to-r from-cyan to-primary text-slate-900 text-sm font-bold shadow-lg shadow-cyan/20 hover:shadow-cyan/40 hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 pointer-events-auto cursor-pointer"
+            className="zen-btn-primary w-full mt-4 flex items-center justify-center gap-2 py-3 rounded-full text-white text-sm font-bold hover:scale-[1.02] active:scale-[0.98] transition-all duration-300 cursor-pointer"
           >
             <Plus className="w-4 h-4" />
             <span>New Analysis</span>
@@ -131,7 +131,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         {/* Footer Nav */}
         <div className="flex flex-col gap-1.5 pt-6 border-t border-[#1E293B]">
           {/* Status Indicator */}
-          <div className="px-4 py-2 bg-glass-bg border border-glass-border rounded-xl flex items-center gap-2.5 mb-2">
+          <div className="zen-glass-pill px-4 py-2 rounded-xl flex items-center gap-2.5 mb-2">
             <span className={`w-2 h-2 rounded-full animate-pulse ${serverOffline ? 'bg-warning' : 'bg-success'}`}></span>
             <span className="text-[10px] text-slate-400 font-mono">
               {serverOffline ? 'Sandbox Mode' : 'Cloud Connected'}

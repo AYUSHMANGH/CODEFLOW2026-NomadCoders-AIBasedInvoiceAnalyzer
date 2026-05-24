@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
+import { ZenPageShell } from '../components/ZenPageShell';
 import { GlassCard } from '../components/GlassCard';
 import { useForm, useFieldArray } from 'react-hook-form';
 import {
@@ -216,46 +217,50 @@ export const InvoiceDetails: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 text-left">
-        {/* Back and Action button header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <button
-            onClick={() => navigate('/expenses')}
-            className="flex items-center gap-1.5 text-xs text-slate-400 hover:text-white transition-all duration-200 cursor-pointer"
-          >
-            <ChevronLeft className="w-4 h-4" />
-            <span>Audit Ledger</span>
-          </button>
-
-          <div className="flex items-center gap-2.5">
+      <ZenPageShell
+        title={currentInvoice.ocrResult?.merchant || 'Invoice'}
+        highlight="Details"
+        subtitle={`Edit extracted metadata · ${currentInvoice.fileName}`}
+        action={
+          <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
             <button
-              onClick={handleReprocess}
-              disabled={reprocessing}
-              className="px-3.5 py-2 border border-glass-border hover:bg-glass-shine disabled:opacity-40 text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              type="button"
+              onClick={() => navigate('/expenses')}
+              className="zen-btn-secondary px-3.5 py-2 text-xs text-slate-300 hover:text-white rounded-full flex items-center gap-1.5 cursor-pointer"
             >
-              <RotateCw className={`w-3.5 h-3.5 ${reprocessing ? 'animate-spin' : ''}`} />
-              <span>Reprocess</span>
+              <ChevronLeft className="w-4 h-4" />
+              <span>Audit Ledger</span>
             </button>
-
-            <button
-              onClick={handleDownloadJSON}
-              className="px-3.5 py-2 border border-glass-border hover:bg-glass-shine text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Download className="w-3.5 h-3.5" />
-              <span>{downloadSuccess ? 'Downloaded!' : 'Download JSON'}</span>
-            </button>
-
-            <button
-              onClick={handleDelete}
-              className="px-3.5 py-2 bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/20 text-rose-400 rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
-            >
-              <Trash2 className="w-3.5 h-3.5" />
-              <span>Delete</span>
-            </button>
+            <div className="flex items-center gap-2 flex-wrap">
+              <button
+                type="button"
+                onClick={handleReprocess}
+                disabled={reprocessing}
+                className="zen-btn-secondary px-3.5 py-2 disabled:opacity-40 text-xs font-bold rounded-full flex items-center gap-1.5 cursor-pointer"
+              >
+                <RotateCw className={`w-3.5 h-3.5 ${reprocessing ? 'animate-spin' : ''}`} />
+                <span>Reprocess</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDownloadJSON}
+                className="zen-btn-secondary px-3.5 py-2 text-xs font-bold rounded-full flex items-center gap-1.5 cursor-pointer"
+              >
+                <Download className="w-3.5 h-3.5" />
+                <span>{downloadSuccess ? 'Downloaded!' : 'Download JSON'}</span>
+              </button>
+              <button
+                type="button"
+                onClick={handleDelete}
+                className="px-3.5 py-2 bg-rose-500/10 border border-rose-500/25 hover:bg-rose-500/20 text-rose-400 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer"
+              >
+                <Trash2 className="w-3.5 h-3.5" />
+                <span>Delete</span>
+              </button>
+            </div>
           </div>
-        </div>
-
-        {/* Workspace Double-Pane Grid */}
+        }
+      >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT COLUMN: Simulated Visual Canvas Doc Preview */}
           <div className="lg:col-span-5 flex flex-col gap-4">
@@ -522,7 +527,7 @@ export const InvoiceDetails: React.FC = () => {
             </form>
           </div>
         </div>
-      </div>
+      </ZenPageShell>
     </AppLayout>
   );
 };

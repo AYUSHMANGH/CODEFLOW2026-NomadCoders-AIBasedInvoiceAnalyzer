@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
 import type { Invoice } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
+import { ZenPageShell } from '../components/ZenPageShell';
 import { GlassCard } from '../components/GlassCard';
 import { useNavigate } from 'react-router-dom';
 import {
@@ -82,21 +83,19 @@ export const Expenses: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 text-left relative min-h-[85vh]">
-        {/* Header Action Row */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h2 className="text-2xl font-geist font-black text-white">Detailed Expense View</h2>
-            <p className="text-xs text-slate-400 mt-1">Audit and verify AI-extracted invoice data for Q3 expenses.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
+      <ZenPageShell
+        title="Expense"
+        highlight="Ledger"
+        subtitle="Audit and verify AI-extracted invoice data for Q3 expenses."
+        className="relative min-h-[85vh]"
+        action={
+          <div className="flex items-center gap-3 flex-wrap">
             {/* Category dropdown filters */}
             <div className="relative">
               <select
                 value={selectedCategory}
                 onChange={(e) => { setSelectedCategory(e.target.value); setCurrentPage(1); }}
-                className="appearance-none pl-3 pr-8 py-2 bg-glass-bg border border-glass-border rounded-xl text-xs font-semibold text-slate-200 focus:outline-none focus:border-cyan cursor-pointer"
+                className="zen-glass-input appearance-none pl-3 pr-8 py-2 rounded-xl text-xs font-semibold text-slate-200 cursor-pointer"
               >
                 {categoriesList.map(cat => (
                   <option key={cat} value={cat} className="bg-[#0F172A]">{cat} Category</option>
@@ -107,15 +106,14 @@ export const Expenses: React.FC = () => {
 
             <button
               onClick={() => alert('Exporting structured CSV output...')}
-              className="px-4 py-2 border border-glass-border hover:bg-glass-shine text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="zen-btn-secondary px-4 py-2 text-slate-200 hover:text-white rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Export</span>
             </button>
           </div>
-        </div>
-
-        {/* Search Searchbar */}
+        }
+      >
         <div className="relative w-full max-w-md">
           <Search className="absolute left-3 top-3 w-4 h-4 text-slate-500" />
           <input
@@ -123,12 +121,12 @@ export const Expenses: React.FC = () => {
             placeholder="Search by merchant or invoice number..."
             value={searchTerm}
             onChange={(e) => { setSearchTerm(e.target.value); setCurrentPage(1); }}
-            className="w-full pl-9 pr-4 py-2.5 bg-glass-bg border border-glass-border rounded-xl text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300"
+            className="zen-glass-input w-full pl-9 pr-4 py-2.5 rounded-xl text-xs text-slate-200 placeholder-slate-500 transition-all duration-300"
           />
         </div>
 
         {/* Expenses List Glass Card - Matches 5.png! */}
-        <GlassCard className="border border-glass-border !p-5">
+        <GlassCard className="!p-5">
           <div className="overflow-x-auto w-full">
             <table className="w-full text-left text-xs border-collapse">
               <thead>
@@ -272,11 +270,11 @@ export const Expenses: React.FC = () => {
         <button
           onClick={() => navigate('/upload')}
           title="Audit new invoice"
-          className="fixed bottom-8 right-8 w-14 h-14 rounded-full bg-gradient-to-tr from-cyan via-primary to-secondary flex items-center justify-center text-slate-950 shadow-2xl shadow-cyan/35 hover:shadow-cyan/50 hover:scale-110 active:scale-95 transition-all duration-300 z-30 animate-bounce pointer-events-auto cursor-pointer"
+          className="zen-btn-primary fixed bottom-8 right-8 w-14 h-14 rounded-full flex items-center justify-center text-white hover:scale-110 active:scale-95 transition-all duration-300 z-30 pointer-events-auto cursor-pointer"
         >
           <Plus className="w-6 h-6 stroke-[3px]" />
         </button>
-      </div>
+      </ZenPageShell>
     </AppLayout>
   );
 };

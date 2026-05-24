@@ -19,11 +19,11 @@ export const GlassCard: React.FC<GlassCardProps> = ({
     <div
       onClick={onClick}
       className={`
-        glass-panel 
+        zen-glass-card
         p-6 
         transition-all 
         duration-300 
-        ${hoverEffect ? 'hover:scale-[1.02] hover:bg-opacity-80 hover:border-glass-shine hover:shadow-[0_20px_50px_rgba(0,0,0,0.5)] cursor-pointer' : ''}
+        ${hoverEffect ? 'hover:scale-[1.02] hover:shadow-[0_0_36px_rgba(59,130,246,0.18)] cursor-pointer' : ''}
         ${pulseGlow ? 'animate-pulse-glow' : ''}
         ${onClick ? 'cursor-pointer' : ''}
         ${className}

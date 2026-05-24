@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
 import { GlassCard } from '../components/GlassCard';
+import { ZenPageShell } from '../components/ZenPageShell';
 import {
   UploadCloud,
   FileText,
@@ -85,12 +86,11 @@ export const Upload: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 text-left">
-        <div>
-          <h2 className="text-2xl font-geist font-black text-white">Invoice Processing</h2>
-          <p className="text-xs text-slate-400 mt-1">Streamline your financial audit with high-precision AI extraction.</p>
-        </div>
-
+      <ZenPageShell
+        title="Invoice"
+        highlight="Processing"
+        subtitle="Streamline your financial audit with high-precision AI extraction."
+      >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* Left Area: Drag and drop + upload queue */}
           <div className="lg:col-span-8 flex flex-col gap-6">
@@ -102,8 +102,8 @@ export const Upload: React.FC = () => {
               onDrop={handleDrop}
               onClick={handleBrowseClick}
               className={`
-                border-2 border-dashed rounded-[24px] p-12 text-center transition-all duration-300 cursor-pointer relative overflow-hidden group
-                ${dragActive ? 'border-cyan bg-cyan/5 shadow-[0_0_20px_rgba(34,211,238,0.15)]' : 'border-[#334155] bg-glass-bg hover:border-cyan/50 hover:bg-glass-bg/70'}
+                zen-drop-zone rounded-2xl p-12 text-center cursor-pointer relative overflow-hidden group
+                ${dragActive ? 'zen-drop-zone-active' : ''}
               `}
             >
               <input
@@ -294,7 +294,7 @@ export const Upload: React.FC = () => {
             </div>
           </div>
         </div>
-      </div>
+      </ZenPageShell>
     </AppLayout>
   );
 };

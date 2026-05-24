@@ -173,7 +173,8 @@ html, body {
   animation: shimmer 1.5s infinite linear;
 }
 
-/* Zen AI Advisor page */
+/* Shared Zen UI — Landing, Advisor, and glass surfaces */
+.zen-page-bg,
 .advisor-page-bg {
   position: relative;
   isolation: isolate;
@@ -184,6 +185,7 @@ html, body {
     radial-gradient(ellipse 50% 40% at 35% 50%, rgba(34, 211, 238, 0.12), transparent 70%);
 }
 
+.zen-glow-orb,
 .advisor-glow-orb {
   position: absolute;
   border-radius: 50%;
@@ -192,6 +194,7 @@ html, body {
   z-index: 0;
 }
 
+.zen-glow-orb--tl,
 .advisor-glow-orb--tl {
   top: -4%;
   left: 8%;
@@ -200,6 +203,7 @@ html, body {
   background: rgba(59, 130, 246, 0.55);
 }
 
+.zen-glow-orb--br,
 .advisor-glow-orb--br {
   bottom: 8%;
   right: 2%;
@@ -208,6 +212,7 @@ html, body {
   background: rgba(124, 92, 252, 0.4);
 }
 
+.zen-glow-orb--center,
 .advisor-glow-orb--chat {
   top: 28%;
   left: 12%;
@@ -216,6 +221,7 @@ html, body {
   background: rgba(34, 211, 238, 0.28);
 }
 
+.zen-glass-panel,
 .advisor-panel {
   position: relative;
   z-index: 1;
@@ -236,6 +242,7 @@ html, body {
     inset 0 0 48px rgba(59, 130, 246, 0.06);
 }
 
+.zen-glass-panel::before,
 .advisor-panel::before {
   content: '';
   position: absolute;
@@ -257,6 +264,7 @@ html, body {
   opacity: 0.85;
 }
 
+.zen-glass-card,
 .advisor-card {
   position: relative;
   z-index: 1;
@@ -310,21 +318,124 @@ html, body {
   background: rgba(34, 211, 238, 0.65);
 }
 
-.advisor-glass-input {
-  background: rgba(5, 10, 20, 0.45);
-  backdrop-filter: blur(12px);
-  -webkit-backdrop-filter: blur(12px);
-  border: 1px solid rgba(96, 165, 250, 0.45);
-  box-shadow:
-    0 0 20px rgba(59, 130, 246, 0.12),
-    inset 0 1px 0 rgba(255, 255, 255, 0.06);
-}
-
+.zen-glass-pill,
 .advisor-glass-pill {
   background: rgba(5, 10, 20, 0.42);
   backdrop-filter: blur(10px);
   -webkit-backdrop-filter: blur(10px);
   border: 1px solid rgba(96, 165, 250, 0.35);
+}
+
+.zen-glass-nav {
+  background: linear-gradient(
+    180deg,
+    rgba(5, 10, 20, 0.85) 0%,
+    rgba(5, 10, 20, 0.55) 100%
+  );
+  backdrop-filter: blur(20px) saturate(1.6);
+  -webkit-backdrop-filter: blur(20px) saturate(1.6);
+  border-bottom: 1px solid rgba(96, 165, 250, 0.35);
+  box-shadow: 0 4px 32px rgba(59, 130, 246, 0.12);
+}
+
+.zen-section-divider {
+  border-color: rgba(96, 165, 250, 0.2);
+}
+
+.zen-gradient-text {
+  background: linear-gradient(to right, #3b82f6, #5b8cff, #a855f7);
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.zen-btn-primary {
+  background: linear-gradient(to right, #3b82f6, #a855f7);
+  box-shadow: 0 0 28px rgba(59, 130, 246, 0.35);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+}
+
+.zen-btn-primary:hover {
+  filter: brightness(1.1);
+}
+
+.zen-btn-secondary {
+  background: rgba(5, 10, 20, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  box-shadow: 0 0 20px rgba(59, 130, 246, 0.1);
+}
+
+.zen-btn-secondary:hover {
+  border-color: rgba(34, 211, 238, 0.55);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.15);
+}
+
+.zen-app-shell {
+  background-color: #020617;
+}
+
+.zen-app-main {
+  position: relative;
+  background-color: #020617;
+  background-image:
+    radial-gradient(ellipse 70% 50% at 0% 0%, rgba(59, 130, 246, 0.18), transparent 55%),
+    radial-gradient(ellipse 60% 45% at 100% 100%, rgba(124, 92, 252, 0.14), transparent 50%);
+}
+
+.zen-app-main .zen-glow-orb {
+  position: absolute;
+  opacity: 0.7;
+}
+
+.zen-sidebar {
+  background: linear-gradient(
+    180deg,
+    rgba(5, 10, 20, 0.97) 0%,
+    rgba(5, 10, 20, 0.92) 100%
+  );
+  border-right: 1px solid rgba(96, 165, 250, 0.28);
+  box-shadow: 4px 0 48px rgba(59, 130, 246, 0.1);
+}
+
+.zen-sidebar-glow {
+  box-shadow: 0 0 24px rgba(59, 130, 246, 0.35);
+}
+
+.zen-glass-input,
+.advisor-glass-input {
+  background: rgba(5, 10, 20, 0.45);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border: 1px solid rgba(96, 165, 250, 0.4);
+  box-shadow:
+    0 0 20px rgba(59, 130, 246, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.06);
+}
+
+.zen-glass-input:focus {
+  outline: none;
+  border-color: rgba(34, 211, 238, 0.65);
+  box-shadow: 0 0 24px rgba(34, 211, 238, 0.15);
+}
+
+.zen-drop-zone {
+  background: linear-gradient(
+    160deg,
+    rgba(15, 23, 42, 0.4) 0%,
+    rgba(5, 10, 20, 0.25) 100%
+  );
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border: 2px dashed rgba(96, 165, 250, 0.45);
+  transition: all 0.3s ease;
+}
+
+.zen-drop-zone-active {
+  border-color: rgba(34, 211, 238, 0.7);
+  box-shadow: 0 0 40px rgba(59, 130, 246, 0.25);
+  background: rgba(59, 130, 246, 0.08);
 }
 
 .advisor-range-cyan {

@@ -8,13 +8,13 @@ import {
   Cpu,
   Zap,
   ArrowRight,
-  TrendingDown,
   Lock,
   ChevronDown,
   Play,
   ShieldCheck,
   Layers,
-  Fingerprint
+  Fingerprint,
+  Sparkles,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -93,89 +93,58 @@ export const Landing: React.FC = () => {
   ];
 
   return (
-    <div className="min-h-screen bg-[#0B1020] text-slate-200 selection:bg-cyan/30 selection:text-white relative overflow-hidden">
-      
-      {/* ─── DYNAMIC BACKGROUND LIGHTING AURA ─────────────────────────────── */}
-      {/* Glow Nebula 1 (Cyan - Pulsating) */}
-      <motion.div
-        animate={{
-          scale: [1, 1.15, 1],
-          opacity: [0.35, 0.45, 0.35],
-          x: [0, 20, 0],
-          y: [0, -30, 0]
-        }}
-        transition={{
-          duration: 12,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        }}
-        className="absolute top-[-10%] left-[-15%] w-[65%] h-[65%] bg-gradient-radial from-cyan/15 to-transparent rounded-full blur-[130px] pointer-events-none z-0"
-      />
+    <div className="zen-page-bg min-h-screen text-slate-200 selection:bg-cyan/30 selection:text-white relative overflow-x-hidden">
+      <div className="zen-glow-orb zen-glow-orb--tl" aria-hidden />
+      <div className="zen-glow-orb zen-glow-orb--br" aria-hidden />
+      <div className="zen-glow-orb zen-glow-orb--center" aria-hidden />
 
-      {/* Glow Nebula 2 (Indigo - Pulsating opposite) */}
-      <motion.div
-        animate={{
-          scale: [1.1, 0.95, 1.1],
-          opacity: [0.3, 0.4, 0.3],
-          x: [0, -35, 0],
-          y: [0, 40, 0]
-        }}
-        transition={{
-          duration: 15,
-          repeat: Infinity,
-          ease: 'easeInOut'
-        }}
-        className="absolute top-[15%] right-[-15%] w-[60%] h-[60%] bg-gradient-radial from-secondary/15 to-transparent rounded-full blur-[140px] pointer-events-none z-0"
-      />
+      <div className="absolute inset-0 bg-[linear-gradient(rgba(96,165,250,0.03)_1px,transparent_1px),linear-gradient(90deg,rgba(96,165,250,0.03)_1px,transparent_1px)] bg-[size:56px_56px] pointer-events-none opacity-50 z-0" />
 
-      {/* Glow Nebula 3 (Magenta/Rose deep section glow) */}
-      <div className="absolute top-[60%] left-[20%] w-[50%] h-[50%] bg-gradient-radial from-primary/5 to-transparent rounded-full blur-[150px] pointer-events-none z-0" />
-
-      {/* Space Grid Mesh overlay for high-tech background depth */}
-      <div className="absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.015)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.015)_1px,transparent_1px)] bg-[size:48px_48px] pointer-events-none opacity-40 z-0" />
-
-      {/* ─── HEADER NAVIGATION ────────────────────────────────────────────── */}
-      <header className="h-20 max-w-7xl mx-auto px-6 flex items-center justify-between border-b border-glass-border relative z-30 select-none">
+      {/* Header */}
+      <header className="sticky top-0 z-40 zen-glass-nav">
+        <div className="h-20 max-w-7xl mx-auto px-6 flex items-center justify-between select-none">
         <div className="flex items-center gap-2.5 cursor-pointer" onClick={() => navigate('/')}>
           <img
             src={financelensLogo}
             alt="FinanceLens Logo"
-            className="w-9 h-9 object-contain rounded-lg drop-shadow-[0_0_8px_rgba(34,211,238,0.55)] transition-all hover:scale-105"
+            className="w-10 h-10 object-contain rounded-xl drop-shadow-[0_0_12px_rgba(59,130,246,0.5)] transition-all hover:scale-105"
           />
           <div className="flex flex-col leading-none text-left">
             <span className="font-geist font-extrabold text-sm text-white tracking-wide">
-              FINANCE<span className="text-cyan drop-shadow-[0_0_6px_rgba(34,211,238,0.3)]">LENS</span>
+              FINANCE<span className="text-cyan">LENS</span>
             </span>
             <span className="text-[9px] font-mono text-slate-400 tracking-wider mt-0.5">AI Invoice Analyzer</span>
           </div>
         </div>
 
-        <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-400">
-          <motion.a href="#features" whileHover={{ scale: 1.05, color: '#FFFFFF' }} className="transition-colors">Features</motion.a>
-          <motion.a href="#security" whileHover={{ scale: 1.05, color: '#FFFFFF' }} className="transition-colors">Security</motion.a>
-          <motion.a href="#faq" whileHover={{ scale: 1.05, color: '#FFFFFF' }} className="transition-colors">FAQ</motion.a>
+        <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-slate-400">
+          <a href="#features" className="hover:text-cyan transition-colors">Features</a>
+          <a href="#security" className="hover:text-cyan transition-colors">Security</a>
+          <a href="#faq" className="hover:text-cyan transition-colors">FAQ</a>
         </nav>
 
-        <div className="flex items-center gap-4">
+        <div className="flex items-center gap-3">
           <button
+            type="button"
             onClick={() => navigate('/login')}
-            className="text-xs font-bold text-slate-300 hover:text-white transition-colors cursor-pointer"
+            className="text-sm font-semibold text-slate-300 hover:text-white transition-colors cursor-pointer px-2"
           >
             Sign In
           </button>
           <motion.button
+            type="button"
             onClick={handleGetStarted}
-            whileHover={{ scale: 1.03, boxShadow: '0 0 15px rgba(124,92,252,0.45)' }}
+            whileHover={{ scale: 1.03 }}
             whileTap={{ scale: 0.97 }}
-            className="px-4 py-2 text-xs font-bold bg-gradient-to-r from-primary to-secondary text-white rounded-xl shadow-lg shadow-primary/10 cursor-pointer border border-white/10 transition-all"
+            className="zen-btn-primary px-5 py-2.5 text-sm font-bold text-white rounded-full cursor-pointer transition-all"
           >
             Get Started
           </motion.button>
         </div>
+        </div>
       </header>
 
-      {/* ─── HERO SECTION ─────────────────────────────────────────────────── */}
-      <section className="max-w-7xl mx-auto px-6 pt-16 pb-24 relative z-20 grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+      <section className="max-w-7xl mx-auto px-6 pt-14 pb-20 relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-14 items-center">
         {/* Left text column - Animated with staggered motion */}
         <motion.div
           variants={containerVariants}
@@ -186,19 +155,18 @@ export const Landing: React.FC = () => {
           {/* Tagline Badge */}
           <motion.div
             variants={itemVariants}
-            className="self-start px-3.5 py-1 rounded-full bg-cyan/10 border border-cyan/20 text-cyan text-[10px] font-bold font-mono uppercase tracking-wider shadow-[0_0_12px_rgba(34,211,238,0.15)]"
+            className="zen-glass-pill self-start px-4 py-1.5 rounded-full text-cyan text-[11px] font-bold font-mono uppercase tracking-wider flex items-center gap-2 shadow-[0_0_20px_rgba(59,130,246,0.2)]"
           >
-            ⚡ Next-Gen AI Analysis
+            <Sparkles className="w-3.5 h-3.5" strokeWidth={2} />
+            Next-Gen AI Analysis
           </motion.div>
 
           <motion.h1
             variants={itemVariants}
-            className="text-4xl sm:text-5xl lg:text-6xl font-geist font-black text-white leading-[1.08] tracking-tight"
+            className="text-4xl sm:text-5xl lg:text-6xl font-geist font-bold text-white leading-[1.08] tracking-tight"
           >
             Turn invoices into <br />
-            <span className="bg-gradient-to-r from-cyan via-primary to-secondary bg-clip-text text-transparent drop-shadow-[0_0_20px_rgba(91,140,255,0.25)]">
-              financial intelligence
-            </span>
+            <span className="zen-gradient-text">financial intelligence</span>
           </motion.h1>
 
           <motion.p
@@ -213,19 +181,21 @@ export const Landing: React.FC = () => {
             className="flex flex-wrap items-center gap-4 mt-2"
           >
             <motion.button
+              type="button"
               onClick={handleGetStarted}
-              whileHover={{ scale: 1.03, boxShadow: '0 0 25px rgba(34,211,238,0.45)' }}
+              whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="px-6 py-3.5 bg-gradient-to-r from-cyan to-primary text-slate-950 font-extrabold rounded-2xl shadow-xl shadow-cyan/20 flex items-center gap-2 cursor-pointer text-xs"
+              className="zen-btn-primary px-6 py-3.5 text-white font-bold rounded-full flex items-center gap-2 cursor-pointer text-sm"
             >
               <span>Upload Invoice</span>
-              <ArrowRight className="w-4.5 h-4.5" />
+              <ArrowRight className="w-4 h-4" strokeWidth={2.5} />
             </motion.button>
             <motion.button
+              type="button"
               onClick={handleDemoClick}
-              whileHover={{ scale: 1.03, borderColor: 'rgba(255,255,255,0.3)' }}
+              whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              className="px-6 py-3.5 bg-[#051424]/90 hover:bg-glass-bg border border-glass-border text-white font-extrabold rounded-2xl transition-colors flex items-center gap-2 cursor-pointer text-xs"
+              className="zen-btn-secondary px-6 py-3.5 text-white font-bold rounded-full flex items-center gap-2 cursor-pointer text-sm transition-all"
             >
               <Play className="w-4 h-4 fill-white text-white" />
               <span>Try Demo Sandbox</span>
@@ -235,10 +205,8 @@ export const Landing: React.FC = () => {
 
         {/* Right Hero Graphic - Holographic Floating Widget */}
         <div className="lg:col-span-5 relative flex justify-center items-center">
-          {/* Subtle halo glow in back */}
-          <div className="absolute w-[360px] h-[360px] bg-gradient-radial from-secondary/15 to-transparent rounded-full blur-[80px] pointer-events-none" />
+          <div className="absolute w-[380px] h-[380px] bg-[#3b82f6]/20 rounded-full blur-[100px] pointer-events-none" />
 
-          {/* Floater container */}
           <motion.div
             animate={{
               y: [-8, 8, -8]
@@ -251,7 +219,7 @@ export const Landing: React.FC = () => {
             className="w-full max-w-sm"
           >
             {/* Interactive Hero Widget */}
-            <GlassCard className="w-full max-w-sm !p-5 relative border border-glass-border shadow-[0_0_40px_rgba(124,92,252,0.12)] select-none overflow-visible">
+            <div className="zen-glass-panel w-full max-w-sm p-5 sm:p-6 select-none overflow-visible relative z-[1]">
               <div className="flex justify-between items-center mb-4">
                 <div className="text-left">
                   <h4 className="text-xs font-bold text-white tracking-wider font-mono">Monthly Burn Rate</h4>
@@ -273,7 +241,7 @@ export const Landing: React.FC = () => {
               {/* Overlay glowing widgets */}
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="absolute -left-6 -bottom-4 bg-[#0F172A]/90 border border-success/40 p-3 rounded-2xl flex items-start gap-2.5 shadow-2xl max-w-[200px] transition-transform duration-300 pointer-events-auto"
+                className="zen-glass-card absolute -left-6 -bottom-4 !p-3 border border-success/40 flex items-start gap-2.5 max-w-[200px] pointer-events-auto"
               >
                 <div className="w-5 h-5 rounded-full bg-success/15 border border-success/30 flex items-center justify-center text-success mt-0.5 animate-pulse">
                   ✓
@@ -286,19 +254,20 @@ export const Landing: React.FC = () => {
 
               <motion.div
                 whileHover={{ scale: 1.05 }}
-                className="absolute -right-4 top-[20%] bg-[#0F172A]/95 border border-primary/30 p-2.5 rounded-xl shadow-2xl text-left transition-transform duration-300 pointer-events-auto shadow-primary/10"
+                className="zen-glass-card absolute -right-4 top-[20%] !p-2.5 text-left pointer-events-auto"
               >
                 <span className="text-[8px] font-mono text-[#bdc2ff] font-bold uppercase tracking-wider block">Confidence Score</span>
                 <span className="text-xs font-mono font-extrabold text-[#1ED760] drop-shadow-[0_0_6px_rgba(30,215,96,0.3)]">99.8%</span>
               </motion.div>
-            </GlassCard>
+            </div>
           </motion.div>
         </div>
       </section>
 
-      {/* ─── FEATURES GRID SECTION ───────────────────────────────────────── */}
-      <section id="features" className="max-w-7xl mx-auto px-6 py-20 border-t border-glass-border text-center relative z-20">
-        <h2 className="text-3xl font-geist font-black text-white mb-2">Precision at every layer</h2>
+      <section id="features" className="max-w-7xl mx-auto px-6 py-20 border-t zen-section-divider text-center relative z-10">
+        <h2 className="text-3xl sm:text-4xl font-geist font-bold text-white mb-2">
+          Precision at <span className="zen-gradient-text">every layer</span>
+        </h2>
         <p className="text-sm text-slate-400 max-w-xl mx-auto mb-12">
           Our specialized AI models are trained on millions of financial documents to ensure institutional-grade accuracy.
         </p>
@@ -310,7 +279,7 @@ export const Landing: React.FC = () => {
             whileHover={{ scale: 1.03, y: -4 }}
             className="flex"
           >
-            <GlassCard className="text-left flex flex-col gap-3.5 border border-glass-border hover:border-cyan/50 hover:shadow-[0_0_30px_rgba(34,211,238,0.12)] transition-all duration-300 flex-1">
+            <GlassCard className="text-left flex flex-col gap-3.5 hover:border-cyan/50 hover:shadow-[0_0_36px_rgba(59,130,246,0.2)] transition-all duration-300 flex-1 !p-5">
               <div className="w-10 h-10 rounded-xl bg-cyan/10 flex items-center justify-center text-cyan border border-cyan/25">
                 <FileText className="w-5 h-5" />
               </div>
@@ -326,7 +295,7 @@ export const Landing: React.FC = () => {
             whileHover={{ scale: 1.03, y: -4 }}
             className="flex"
           >
-            <GlassCard className="text-left flex flex-col gap-3.5 border border-glass-border hover:border-primary/50 hover:shadow-[0_0_30px_rgba(91,140,255,0.12)] transition-all duration-300 flex-1">
+            <GlassCard className="text-left flex flex-col gap-3.5 hover:border-primary/50 hover:shadow-[0_0_36px_rgba(59,130,246,0.2)] transition-all duration-300 flex-1 !p-5">
               <div className="w-10 h-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary border border-primary/25">
                 <Cpu className="w-5 h-5" />
               </div>
@@ -342,7 +311,7 @@ export const Landing: React.FC = () => {
             whileHover={{ scale: 1.03, y: -4 }}
             className="flex"
           >
-            <GlassCard className="text-left flex flex-col gap-3.5 border border-glass-border hover:border-success/50 hover:shadow-[0_0_30px_rgba(30,215,96,0.12)] transition-all duration-300 flex-1">
+            <GlassCard className="text-left flex flex-col gap-3.5 hover:border-success/50 hover:shadow-[0_0_36px_rgba(30,215,96,0.15)] transition-all duration-300 flex-1 !p-5">
               <div className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success border border-success/25">
                 <BarChart3 className="w-5 h-5" />
               </div>
@@ -358,7 +327,7 @@ export const Landing: React.FC = () => {
             whileHover={{ scale: 1.03, y: -4 }}
             className="flex"
           >
-            <GlassCard className="text-left flex flex-col gap-3.5 border border-glass-border hover:border-secondary/50 hover:shadow-[0_0_30px_rgba(124,92,252,0.12)] transition-all duration-300 flex-1">
+            <GlassCard className="text-left flex flex-col gap-3.5 hover:border-secondary/50 hover:shadow-[0_0_36px_rgba(168,85,247,0.2)] transition-all duration-300 flex-1 !p-5">
               <div className="w-10 h-10 rounded-xl bg-secondary/10 flex items-center justify-center text-secondary border border-secondary/25">
                 <Zap className="w-5 h-5 animate-pulse" />
               </div>
@@ -372,12 +341,15 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ─── SECURITY & LOGOS SECTION ───────────────────────────────────── */}
-      <section id="security" className="max-w-7xl mx-auto px-6 py-20 border-t border-glass-border relative z-20">
+      <section id="security" className="max-w-7xl mx-auto px-6 py-20 border-t zen-section-divider relative z-10">
         <div className="text-center mb-16">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-success/10 border border-success/20 text-success text-[10px] font-bold font-mono uppercase tracking-wider mb-4 animate-pulse">
-            🛡️ Bank-Grade Compliance
+          <div className="zen-glass-pill inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-success text-[11px] font-bold font-mono uppercase tracking-wider mb-4">
+            <ShieldCheck className="w-3.5 h-3.5" strokeWidth={2} />
+            Bank-Grade Compliance
           </div>
-          <h2 className="text-3xl font-geist font-black text-white mb-3">Enterprise Trust & Ironclad Security</h2>
+          <h2 className="text-3xl sm:text-4xl font-geist font-bold text-white mb-3">
+            Enterprise Trust & <span className="zen-gradient-text">Security</span>
+          </h2>
           <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
             FinanceLens AI meets rigorous institutional auditing standards and operates under state-of-the-art security protocols to protect your corporate treasury logs.
           </p>
@@ -416,7 +388,7 @@ export const Landing: React.FC = () => {
 
         {/* Security Badges Grid */}
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 max-w-6xl mx-auto">
-          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+          <GlassCard className="text-left flex flex-col gap-4 !p-6 hoverEffect">
             <div className="w-10 h-10 rounded-xl bg-success/15 flex items-center justify-center text-success border border-success/20">
               <ShieldCheck className="w-5 h-5" />
             </div>
@@ -428,7 +400,7 @@ export const Landing: React.FC = () => {
             </div>
           </GlassCard>
 
-          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+          <GlassCard className="text-left flex flex-col gap-4 !p-6 hoverEffect">
             <div className="w-10 h-10 rounded-xl bg-cyan/15 flex items-center justify-center text-cyan border border-cyan/20">
               <Lock className="w-5 h-5" />
             </div>
@@ -440,7 +412,7 @@ export const Landing: React.FC = () => {
             </div>
           </GlassCard>
 
-          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+          <GlassCard className="text-left flex flex-col gap-4 !p-6 hoverEffect">
             <div className="w-10 h-10 rounded-xl bg-primary/15 flex items-center justify-center text-primary border border-primary/20">
               <Layers className="w-5 h-5" />
             </div>
@@ -452,7 +424,7 @@ export const Landing: React.FC = () => {
             </div>
           </GlassCard>
 
-          <GlassCard className="text-left flex flex-col gap-4 p-6 hoverEffect border border-glass-border">
+          <GlassCard className="text-left flex flex-col gap-4 !p-6 hoverEffect">
             <div className="w-10 h-10 rounded-xl bg-secondary/15 flex items-center justify-center text-secondary border border-secondary/20">
               <Fingerprint className="w-5 h-5" />
             </div>
@@ -467,15 +439,17 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ─── FAQ SECTION WITH SLIDE ACCORDIONS ────────────────────────────── */}
-      <section id="faq" className="max-w-4xl mx-auto px-6 py-20 border-t border-glass-border relative z-20">
-        <h2 className="text-3xl font-geist font-black text-center text-white mb-10">Frequently Asked Questions</h2>
+      <section id="faq" className="max-w-4xl mx-auto px-6 py-20 border-t zen-section-divider relative z-10">
+        <h2 className="text-3xl sm:text-4xl font-geist font-bold text-center text-white mb-10">
+          Frequently Asked <span className="zen-gradient-text">Questions</span>
+        </h2>
         
         <div className="flex flex-col gap-4">
           {faqItems.map((item, idx) => (
             <GlassCard
               key={idx}
               onClick={() => toggleFaq(idx)}
-              className="!p-5 hoverEffect border border-glass-border cursor-pointer select-none"
+              className="!p-5 hoverEffect cursor-pointer select-none hover:shadow-[0_0_32px_rgba(59,130,246,0.15)]"
             >
               <div className="flex justify-between items-center select-none">
                 <span className="text-sm font-bold text-white text-left">{item.q}</span>
@@ -502,36 +476,38 @@ export const Landing: React.FC = () => {
       </section>
 
       {/* ─── BOTTOM GLOWING CALL TO ACTION ────────────────────────────────── */}
-      <section className="max-w-6xl mx-auto px-6 pb-24 pt-10 relative z-20">
-        {/* Glow panel container */}
-        <div className="bg-gradient-to-r from-primary/10 via-secondary/15 to-[#0B1020] border border-secondary/35 rounded-[28px] p-12 text-center shadow-[0_0_40px_rgba(124,92,252,0.1)] relative overflow-hidden">
-          {/* Internal neon ambient lighting */}
-          <div className="absolute -top-24 -left-24 w-60 h-60 bg-[#7C5CFC]/15 rounded-full blur-[90px] pointer-events-none" />
-          <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-[#22D3EE]/10 rounded-full blur-[90px] pointer-events-none" />
+      <section className="max-w-6xl mx-auto px-6 pb-24 pt-10 relative z-10">
+        <div className="zen-glass-panel rounded-2xl p-10 sm:p-12 text-center relative overflow-hidden">
+          <div className="absolute -top-24 -left-24 w-60 h-60 bg-[#3b82f6]/25 rounded-full blur-[90px] pointer-events-none" />
+          <div className="absolute -bottom-24 -right-24 w-60 h-60 bg-[#a855f7]/20 rounded-full blur-[90px] pointer-events-none" />
 
-          <h2 className="text-3xl sm:text-4xl font-geist font-black text-white mb-3">Ready to automate your finance?</h2>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto mb-8 leading-relaxed">
-            Join over 5,000+ finance teams using FinanceLens to reclaim 20+ hours a month on manual invoice bookkeeping and data-entry.
-          </p>
-          <motion.button
-            onClick={handleGetStarted}
-            whileHover={{ scale: 1.03, boxShadow: '0 0 25px rgba(124,92,252,0.5)' }}
-            whileTap={{ scale: 0.97 }}
-            className="px-8 py-4 bg-primary text-slate-950 font-black text-sm rounded-2xl shadow-xl shadow-primary/20 transition-all cursor-pointer border border-white/10"
-          >
-            Start Free Sandbox Session
-          </motion.button>
+          <div className="relative z-[1]">
+            <h2 className="text-3xl sm:text-4xl font-geist font-bold text-white mb-3">
+              Ready to automate your <span className="zen-gradient-text">finance</span>?
+            </h2>
+            <p className="text-sm text-slate-400 max-w-xl mx-auto mb-8 leading-relaxed">
+              Join finance teams using FinanceLens to reclaim 20+ hours a month on manual invoice bookkeeping and data-entry.
+            </p>
+            <motion.button
+              type="button"
+              onClick={handleGetStarted}
+              whileHover={{ scale: 1.03 }}
+              whileTap={{ scale: 0.97 }}
+              className="zen-btn-primary px-8 py-4 text-white font-bold text-sm rounded-full cursor-pointer transition-all"
+            >
+              Start Free Sandbox Session
+            </motion.button>
+          </div>
         </div>
       </section>
 
-      {/* ─── FOOTER ──────────────────────────────────────────────────────── */}
-      <footer className="border-t border-[#1E293B] bg-[#051424] py-10 relative z-20">
+      <footer className="border-t zen-section-divider zen-glass-nav py-10 relative z-10">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
             <img
               src={financelensLogo}
               alt="FinanceLens Logo"
-              className="w-8 h-8 object-contain rounded-lg drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]"
+              className="w-9 h-9 object-contain rounded-lg drop-shadow-[0_0_10px_rgba(59,130,246,0.45)]"
             />
             <span className="font-geist font-extrabold text-xs text-white">
               © {new Date().getFullYear()} FinanceLens AI. Precision Intelligence for Finance.

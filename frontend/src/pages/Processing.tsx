@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
+import { ZenPageShell } from '../components/ZenPageShell';
 import { GlassCard } from '../components/GlassCard';
 import { motion } from 'framer-motion';
 import { FileText, ArrowRight, Loader2, Sparkles, ShieldCheck, Database, BarChart3, HelpCircle } from 'lucide-react';
@@ -104,14 +105,18 @@ export const Processing: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col items-center justify-center min-h-[70vh] text-left max-w-xl mx-auto">
-        <h2 className="text-xl font-geist font-black text-white text-center mb-1.5 self-center">AI Extraction Engine</h2>
-        <p className="text-[11px] text-slate-400 text-center mb-8 self-center">
-          Analyzing document <span className="font-mono text-cyan">{currentInvoice?.fileName || id}</span>...
-        </p>
-
-        {/* MESMERIZING ANATOMICAL PIPELINE CARD */}
-        <GlassCard className="w-full border border-glass-border relative overflow-hidden bg-gradient-to-b from-[#0F172A]/70 to-[#051424]/75 !p-6 shadow-2xl shadow-primary/5">
+      <ZenPageShell
+        title="AI Extraction"
+        highlight="Engine"
+        subtitle={
+          <>
+            Analyzing document{' '}
+            <span className="font-mono text-cyan">{currentInvoice?.fileName || id}</span>...
+          </>
+        }
+        className="items-center justify-center min-h-[70vh] max-w-xl mx-auto"
+      >
+        <GlassCard className="zen-glass-panel w-full relative overflow-hidden !p-6">
           {/* Glass shimmering shimmer layer */}
           <div className="absolute top-0 left-0 w-full h-1 glass-shimmer" />
 
@@ -196,7 +201,7 @@ export const Processing: React.FC = () => {
             <span>Task Thread: 0x{id?.substring(4, 8) || 'AE3A'}</span>
           </div>
         </GlassCard>
-      </div>
+      </ZenPageShell>
     </AppLayout>
   );
 };

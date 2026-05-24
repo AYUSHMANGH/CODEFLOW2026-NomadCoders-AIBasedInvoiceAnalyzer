@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
 import { GlassCard } from '../components/GlassCard';
+import { ZenPageShell } from '../components/ZenPageShell';
 import {
   ResponsiveContainer,
   AreaChart,
@@ -48,34 +49,31 @@ export const Analytics: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 text-left">
-        {/* Title Action Bar */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-geist font-black text-white">Expense Analytics</h2>
-            <p className="text-xs text-slate-400 mt-1">Deep-dive structural charts and GST summaries.</p>
-          </div>
-
-          <div className="flex items-center gap-3">
+      <ZenPageShell
+        title="Expense"
+        highlight="Analytics"
+        subtitle="Deep-dive structural charts and GST summaries."
+        action={
+          <div className="flex items-center gap-3 flex-wrap">
             <button
+              type="button"
               onClick={() => alert('Filtering options are synced to Q3 ledger.')}
-              className="px-4 py-2 border border-glass-border bg-glass-bg hover:bg-glass-shine text-slate-300 hover:text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer"
+              className="zen-btn-secondary px-4 py-2 text-slate-200 rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Filter className="w-3.5 h-3.5" />
               <span>30 Days (Q3)</span>
             </button>
-            
             <button
+              type="button"
               onClick={() => alert('Downloading analytical spreadsheet...')}
-              className="px-4 py-2 bg-gradient-to-r from-primary to-secondary text-white rounded-xl text-xs font-bold transition-all flex items-center gap-1.5 cursor-pointer shadow-lg shadow-primary/10"
+              className="zen-btn-primary px-4 py-2 text-white rounded-full text-xs font-bold flex items-center gap-1.5 cursor-pointer"
             >
               <Download className="w-3.5 h-3.5" />
               <span>Download Report</span>
             </button>
           </div>
-        </div>
-
-        {/* GST / TAX SUMMARY CARDS */}
+        }
+      >
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           <GlassCard className="border border-glass-border" hoverEffect>
             <div className="flex justify-between items-start">
@@ -251,7 +249,7 @@ export const Analytics: React.FC = () => {
             </div>
           </GlassCard>
         </div>
-      </div>
+      </ZenPageShell>
     </AppLayout>
   );
 };

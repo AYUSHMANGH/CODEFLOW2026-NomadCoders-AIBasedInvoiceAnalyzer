@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
+import { ZenPageShell } from '../components/ZenPageShell';
 import { GlassCard } from '../components/GlassCard';
 import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import {
@@ -66,14 +67,11 @@ export const Settings: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 text-left">
-        {/* Title */}
-        <div>
-          <h2 className="text-2xl font-geist font-black text-white">System Settings</h2>
-          <p className="text-xs text-slate-400 mt-1">Manage your financial targets, compliance preferences, and backups.</p>
-        </div>
-
-        {/* Setting grids */}
+      <ZenPageShell
+        title="System"
+        highlight="Settings"
+        subtitle="Manage your financial targets, compliance preferences, and backups."
+      >
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           {/* LEFT AREA: Form settings */}
           <div className="lg:col-span-8 flex flex-col gap-6">
@@ -245,7 +243,7 @@ export const Settings: React.FC = () => {
             )}
           </div>
         </div>
-      </div>
+      </ZenPageShell>
 
       {/* Delete Account Modal */}
       <DeleteAccountModal

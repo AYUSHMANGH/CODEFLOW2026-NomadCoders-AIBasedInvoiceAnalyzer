@@ -2,6 +2,7 @@ import React, { useEffect } from 'react';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
 import { GlassCard } from '../components/GlassCard';
+import { ZenPageShell, ZenStaggerGrid } from '../components/ZenPageShell';
 import { useNavigate } from 'react-router-dom';
 import {
   TrendingUp,
@@ -40,16 +41,15 @@ export const Dashboard: React.FC = () => {
     return (
       <AppLayout>
         <div className="flex-1 flex flex-col gap-6 animate-pulse">
-          <div className="h-10 bg-glass-bg rounded-xl w-48 mb-6" />
+          <div className="h-10 zen-glass-card rounded-xl w-48 mb-6 !p-0 min-h-[2.5rem]" />
           <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-            <div className="h-28 bg-glass-bg rounded-[24px]" />
-            <div className="h-28 bg-glass-bg rounded-[24px]" />
-            <div className="h-28 bg-glass-bg rounded-[24px]" />
-            <div className="h-28 bg-glass-bg rounded-[24px]" />
+            {[1, 2, 3, 4].map((i) => (
+              <div key={i} className="h-28 zen-glass-card rounded-2xl !p-0" />
+            ))}
           </div>
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mt-6">
-            <div className="h-80 bg-glass-bg rounded-[24px] lg:col-span-2" />
-            <div className="h-80 bg-glass-bg rounded-[24px]" />
+            <div className="h-80 zen-glass-card rounded-2xl lg:col-span-2 !p-0" />
+            <div className="h-80 zen-glass-card rounded-2xl !p-0" />
           </div>
         </div>
       </AppLayout>
@@ -89,27 +89,24 @@ export const Dashboard: React.FC = () => {
 
   return (
     <AppLayout>
-      <div className="flex flex-col gap-6 text-left">
-        {/* Banner Section */}
-        <div className="flex justify-between items-start">
-          <div>
-            <h2 className="text-2xl font-geist font-black text-white">Financial Overview</h2>
-            <p className="text-xs text-slate-400 mt-1">Real-time analysis and anomaly detection from {invoicesCount} processed invoices.</p>
-          </div>
-          
+      <ZenPageShell
+        title="Financial"
+        highlight="Overview"
+        subtitle={`Real-time analysis and anomaly detection from ${invoicesCount} processed invoices.`}
+        action={
           <button
+            type="button"
             onClick={() => navigate('/upload')}
-            className="px-4 py-2 text-xs font-bold bg-[#1ED760]/10 hover:bg-[#1ED760]/15 border border-[#1ED760]/30 text-[#1ED760] rounded-xl cursor-pointer flex items-center gap-1.5 transition-all hover:scale-105"
+            className="zen-btn-primary px-4 py-2.5 text-xs font-bold text-white rounded-full cursor-pointer flex items-center gap-2 transition-all hover:scale-[1.02]"
           >
-            <Sparkles className="w-3.5 h-3.5" />
+            <Sparkles className="w-4 h-4" strokeWidth={2} />
             <span>Generate AI Audit</span>
           </button>
-        </div>
-
-        {/* 4 TOP KPI CARDS */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        }
+      >
+        <ZenStaggerGrid className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           {/* Total Spend */}
-          <GlassCard className="border border-glass-border flex flex-col justify-between" hoverEffect>
+          <GlassCard className="flex flex-col justify-between" hoverEffect>
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Total Spending</span>
@@ -126,7 +123,7 @@ export const Dashboard: React.FC = () => {
           </GlassCard>
 
           {/* Pending Invoices */}
-          <GlassCard className="border border-glass-border flex flex-col justify-between" hoverEffect>
+          <GlassCard className="flex flex-col justify-between" hoverEffect>
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Pending Invoices</span>
@@ -142,7 +139,7 @@ export const Dashboard: React.FC = () => {
           </GlassCard>
 
           {/* Monthly Growth / Risk */}
-          <GlassCard className="border border-glass-border flex flex-col justify-between" hoverEffect>
+          <GlassCard className="flex flex-col justify-between" hoverEffect>
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Monthly Growth</span>
@@ -158,7 +155,7 @@ export const Dashboard: React.FC = () => {
           </GlassCard>
 
           {/* Budget Health Score */}
-          <GlassCard className="border border-glass-border flex flex-col justify-between" hoverEffect>
+          <GlassCard className="flex flex-col justify-between" hoverEffect>
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Budget Score</span>
@@ -172,12 +169,10 @@ export const Dashboard: React.FC = () => {
               <div className="bg-cyan h-full" style={{ width: `${Math.min(spendPercent, 100)}%` }} />
             </div>
           </GlassCard>
-        </div>
+        </ZenStaggerGrid>
 
-        {/* MIDDLE SECTION - CHARTS GRID */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-stretch">
-          {/* Line Area Chart: Spending Trends */}
-          <GlassCard className="lg:col-span-8 border border-glass-border flex flex-col gap-6 justify-between !p-5">
+          <GlassCard className="lg:col-span-8 flex flex-col gap-6 justify-between !p-5">
             <div className="flex justify-between items-center border-b border-[#1E293B] pb-3">
               <div>
                 <h4 className="text-xs font-bold text-white tracking-wide font-mono">Spending Trends</h4>
@@ -377,7 +372,7 @@ export const Dashboard: React.FC = () => {
             </div>
           </GlassCard>
         </div>
-      </div>
+      </ZenPageShell>
     </AppLayout>
   );
 };

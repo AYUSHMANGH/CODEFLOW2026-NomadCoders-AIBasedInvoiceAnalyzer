@@ -1,6 +1,8 @@
 <div align="center">
 
-# FinanceLens AI
+<img src="frontend/src/assets/logo.png" alt="FinanceLens AI" width="120" />
+
+# 💎 FinanceLens AI
 
 **Turn invoices into financial intelligence.**
 
@@ -12,13 +14,13 @@
 
 *A production-grade FinTech platform for corporate receipt auditing, spend analytics, and AI-powered financial counseling.*
 
-[Features](#-features) · [Stack](#-tech-stack) · [Quick Start](#-quick-start) · [Architecture](#-architecture)
+[✨ Features](#-features) · [📸 Screenshots](#-screenshots) · [🛠️ Stack](#️-tech-stack) · [🚀 Quick Start](#-quick-start) · [🏗️ Architecture](#️-architecture)
 
 </div>
 
 ---
 
-## Overview
+## 📖 Overview
 
 **FinanceLens AI** helps finance teams move from manual invoice review to actionable insight in minutes. Upload receipts and invoices (PDF, JPG, PNG), extract structured line items with AI, track budget health, visualize spend patterns, and consult **Zen AI Advisor**—an embedded analyst for anomalies, savings scenarios, and audit-grade recommendations.
 
@@ -26,25 +28,71 @@ The app ships as a full-stack monorepo: a **Vite + React** client with a glassmo
 
 ---
 
-## Features
+## 📸 Screenshots
 
-| Module | What it does |
-|--------|----------------|
-| **Upload Center** | Drag-and-drop ingestion (up to 25MB), live upload queues, animated progress |
-| **OCR Pipeline** | Upload → scan → extract → categorize → insights → complete |
-| **Dashboard** | KPI cards, burn-rate trends, category breakdowns, budget score |
-| **Expenses & Editor** | Searchable ledger, two-pane metadata editor with `React Hook Form` |
-| **Analytics** | Interactive charts powered by Recharts |
-| **AI Insights** | Automated flags, patterns, and narrative summaries |
-| **Zen AI Advisor** | Glass UI chat with scenario sliders, 12-month projections, suggested prompts |
-| **Sandbox Mode** | Full offline fallback via LocalStorage when the API is unavailable |
+### 🌌 Landing page
+*Hero, glass CTAs, and floating analytics preview.*
+
+<p align="center">
+  <img src="docs/screenshots/landing.png" alt="FinanceLens landing page" width="92%" />
+</p>
+
+### 📊 Dashboard
+*KPI cards, spend trends, category breakdown, and live ledger activity.*
+
+<p align="center">
+  <img src="docs/screenshots/dashboard.png" alt="FinanceLens dashboard" width="92%" />
+</p>
+
+### 📤 Upload center
+*Drag-and-drop invoice ingestion with real-time processing queue.*
+
+<p align="center">
+  <img src="docs/screenshots/upload.png" alt="FinanceLens upload page" width="92%" />
+</p>
+
+### 🧠 AI Insights
+*Health gauges, recommendations, and audit-grade summaries.*
+
+<p align="center">
+  <img src="docs/screenshots/insights.png" alt="FinanceLens AI insights" width="92%" />
+</p>
+
+### 📈 Analytics
+*Deep-dive charts, tax summaries, and spending heatmaps.*
+
+<p align="center">
+  <img src="docs/screenshots/analytics.png" alt="FinanceLens analytics" width="92%" />
+</p>
+
+### 🤖 Zen AI Advisor
+*Glass chat workspace, scenario simulator, and 12-month cash projections.*
+
+<p align="center">
+  <img src="docs/screenshots/ai-advisor.png" alt="Zen AI Advisor" width="92%" />
+</p>
 
 ---
 
-## Tech Stack
+## ✨ Features
+
+| Module | What it does |
+|--------|----------------|
+| 📤 **Upload Center** | Drag-and-drop ingestion (up to 25MB), live upload queues, animated progress |
+| 🔍 **OCR Pipeline** | Upload → scan → extract → categorize → insights → complete |
+| 📊 **Dashboard** | KPI cards, burn-rate trends, category breakdowns, budget score |
+| 🧾 **Expenses & Editor** | Searchable ledger, two-pane metadata editor with `React Hook Form` |
+| 📈 **Analytics** | Interactive charts powered by Recharts |
+| 💡 **AI Insights** | Automated flags, patterns, and narrative summaries |
+| 🤖 **Zen AI Advisor** | Glass UI chat with scenario sliders, 12-month projections, suggested prompts |
+| 🧪 **Sandbox Mode** | Full offline fallback via LocalStorage when the API is unavailable |
+
+---
+
+## 🛠️ Tech Stack
 
 <details>
-<summary><strong>Frontend</strong></summary>
+<summary><strong>⚛️ Frontend</strong></summary>
 
 - React 19 · Vite · TypeScript  
 - Tailwind CSS v4 (glass panels, neon glows, custom theme tokens)  
@@ -53,7 +101,7 @@ The app ships as a full-stack monorepo: a **Vite + React** client with a glassmo
 </details>
 
 <details>
-<summary><strong>Backend</strong></summary>
+<summary><strong>🖥️ Backend</strong></summary>
 
 - Node.js · Express · TypeScript  
 - Multer · PDF parsing  
@@ -64,7 +112,7 @@ The app ships as a full-stack monorepo: a **Vite + React** client with a glassmo
 
 ---
 
-## Architecture
+## 🏗️ Architecture
 
 ```mermaid
 flowchart LR
@@ -92,18 +140,18 @@ flowchart LR
 
 ---
 
-## Quick Start
+## 🚀 Quick Start
 
 **Prerequisites:** [Node.js 22+](https://nodejs.org/)
 
-### 1. Clone the repository
+### 1️⃣ Clone the repository
 
 ```bash
 git clone https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer.git
 cd CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer
 ```
 
-### 2. Start the API
+### 2️⃣ Start the API
 
 ```bash
 cd backend
@@ -113,7 +161,7 @@ npm run dev
 
 Runs at **`http://localhost:5000`**
 
-### 3. Start the client
+### 3️⃣ Start the client
 
 In a second terminal:
 
@@ -125,36 +173,37 @@ npm run dev
 
 Opens at **`http://localhost:5173`**
 
-### Environment (optional)
+### 🔐 Environment (optional)
 
 For cloud AI and Firebase, configure credentials in the backend and frontend per your deployment setup. Without them, the client automatically uses **sandbox mode** so you can explore the full UI locally.
 
 ---
 
-## Project Structure
+## 📁 Project Structure
 
 ```
-├── backend/          # Express API — routes, controllers, Gemini & OCR services
-├── frontend/         # React app — pages, glass UI components, contexts
-├── ui designs/       # Design references and mockups
+├── backend/              # Express API — routes, controllers, Gemini & OCR services
+├── frontend/             # React app — pages, glass UI components, contexts
+├── docs/screenshots/     # README UI previews
+├── ui designs/           # Design references and mockups
 └── README.md
 ```
 
 ---
 
-## Design Language
+## 🎨 Design Language
 
 FinanceLens uses a **Midnight Zen** aesthetic: deep cosmic backgrounds, frosted-glass surfaces, cyan–violet gradients, and soft blue ambient lighting. The Zen AI Advisor page pairs a contained chat workspace with a scenario simulator and projected cash-flow outcomes—built for clarity during long audit sessions.
 
 ---
 
-## Contributing
+## 🤝 Contributing
 
 Issues and pull requests are welcome. Please open an issue first for large changes so we can align on scope.
 
 ---
 
-## License
+## 📄 License
 
 ISC
 
@@ -162,8 +211,8 @@ ISC
 
 <div align="center">
 
-**Built for CODEFLOW 2026 · Nomad Coders**
+**Built for CODEFLOW 2026 · Nomad Coders** 🚀
 
-[Report a bug](https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer/issues) · [View repository](https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer)
+[🐛 Report a bug](https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer/issues) · [⭐ View repository](https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer)
 
 </div>

@@ -16,7 +16,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, lockScroll }) =>
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-[#0B1020] flex flex-col items-center justify-center">
+      <div className="min-h-screen zen-app-shell flex flex-col items-center justify-center">
         {/* Shimmer layout */}
         <div className="w-14 h-14 border-4 border-primary border-t-transparent rounded-full animate-spin mb-4" />
         <p className="font-mono text-xs text-slate-400 animate-pulse">Initializing Financial Audit Workspace...</p>
@@ -30,7 +30,7 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, lockScroll }) =>
   }
 
   return (
-    <div className="flex min-h-screen bg-[#0B1020] text-slate-200">
+    <div className="flex min-h-screen zen-app-shell text-slate-200">
       {/* Fixed Sidebar */}
       <Sidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
 
@@ -41,11 +41,22 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children, lockScroll }) =>
 
         {/* Dynamic page contents */}
         <main
-          className={`flex-1 min-h-0 ${
-            lockScroll ? 'p-3 sm:p-4 overflow-hidden flex flex-col' : 'p-4 sm:p-6 lg:p-8 overflow-y-auto'
+          className={`flex-1 min-h-0 relative ${
+            lockScroll
+              ? 'p-3 sm:p-4 overflow-hidden flex flex-col'
+              : 'zen-app-main p-4 sm:p-6 lg:p-8 overflow-y-auto overflow-x-hidden'
           }`}
         >
-          {children}
+          {!lockScroll && (
+            <div className="pointer-events-none absolute inset-0 overflow-hidden z-0" aria-hidden>
+              <div className="zen-glow-orb zen-glow-orb--tl" />
+              <div className="zen-glow-orb zen-glow-orb--br" />
+              <div className="zen-glow-orb zen-glow-orb--center" />
+            </div>
+          )}
+          <div className={`relative z-10 ${lockScroll ? 'h-full min-h-0 flex flex-col' : ''}`}>
+            {children}
+          </div>
         </main>
       </div>
     </div>

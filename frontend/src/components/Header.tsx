@@ -21,7 +21,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   if (!user) return null;
 
   return (
-    <header className="h-20 border-b border-[#1E293B] px-4 md:px-8 flex items-center justify-between bg-[#0B1020]/80 backdrop-blur-md sticky top-0 z-10">
+    <header className="h-20 zen-glass-nav px-4 md:px-8 flex items-center justify-between sticky top-0 z-20 shrink-0">
       <div className="flex items-center flex-1 md:flex-none">
         {/* Hamburger menu for mobile */}
         <button
@@ -40,7 +40,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <input
             type="text"
             placeholder="Search invoices, merchants, or patterns..."
-            className="w-full pl-10 pr-4 py-2 bg-glass-bg border border-glass-border rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300"
+            className="zen-glass-input w-full pl-10 pr-4 py-2 rounded-xl text-sm text-slate-200 placeholder-slate-500 transition-all duration-300"
           />
         </div>
       </div>
@@ -48,7 +48,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
       {/* Right Toolbar Actions */}
       <div className="flex items-center gap-3.5 sm:gap-5">
         {/* Connection status badge */}
-        <div className="flex items-center gap-2 px-2.5 py-1 sm:px-3 bg-glass-bg border border-glass-border rounded-full">
+        <div className="zen-glass-pill flex items-center gap-2 px-2.5 py-1 sm:px-3 rounded-full">
           {serverOffline ? (
             <>
               <WifiOff className="w-3.5 h-3.5 text-warning" />
@@ -86,7 +86,7 @@ export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           </button>
 
           {showNotifications && (
-            <div className="absolute right-0 mt-3 w-80 bg-[#0F172A] border border-[#1E293B] rounded-2xl shadow-2xl p-4 z-50 animate-in fade-in slide-in-from-top-2 duration-200">
+            <div className="absolute right-0 mt-3 w-80 zen-glass-panel rounded-2xl p-4 z-50 shadow-2xl">
               <div className="flex justify-between items-center pb-2 border-b border-[#1E293B] mb-2">
                 <h4 className="text-xs font-semibold text-white">Financial Security Center</h4>
                 <span className="text-[9px] bg-error/20 text-error px-2 py-0.5 rounded-full font-mono">

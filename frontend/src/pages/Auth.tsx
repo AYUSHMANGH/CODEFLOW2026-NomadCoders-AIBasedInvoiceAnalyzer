@@ -57,12 +57,12 @@ export const Auth: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-[#0B1020] relative flex items-center justify-center px-4 overflow-hidden py-12">
-      {/* Background neon blobs */}
-      <div className="absolute top-[-10%] left-[-10%] w-[50%] h-[50%] bg-[#5B8CFF]/15 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-[-10%] right-[-10%] w-[50%] h-[50%] bg-[#7C5CFC]/15 rounded-full blur-[120px] pointer-events-none" />
-      
-      <div className="w-full max-w-md z-10">
+    <div className="zen-page-bg min-h-screen relative flex items-center justify-center px-4 overflow-hidden py-12">
+      <div className="zen-glow-orb zen-glow-orb--tl" aria-hidden />
+      <div className="zen-glow-orb zen-glow-orb--br" aria-hidden />
+      <div className="zen-glow-orb zen-glow-orb--center" aria-hidden />
+
+      <div className="w-full max-w-md z-10 relative">
         {/* Title logo */}
         <div className="text-center mb-8">
           <img
@@ -74,7 +74,7 @@ export const Auth: React.FC = () => {
         </div>
 
         {/* Auth Glass Card */}
-        <GlassCard className="!p-8 border border-glass-border">
+        <GlassCard className="zen-glass-panel !p-8">
           {/* Custom Auth Tabs */}
           <div className="flex bg-[#051424] p-1 rounded-xl mb-6 border border-[#1E293B]">
             <button
@@ -115,7 +115,7 @@ export const Auth: React.FC = () => {
                     placeholder="Enter your name"
                     value={name}
                     onChange={(e) => setName(e.target.value)}
-                    className="w-full pl-9 pr-4 py-3 bg-[#051424] border border-[#334155] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300"
+                    className="zen-glass-input w-full pl-9 pr-4 py-3 rounded-xl text-xs text-white placeholder-slate-500 transition-all duration-300"
                   />
                 </div>
               </div>
@@ -131,7 +131,7 @@ export const Auth: React.FC = () => {
                   placeholder="name@company.com"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="w-full pl-9 pr-4 py-3 bg-[#051424] border border-[#334155] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300"
+                  className="zen-glass-input w-full pl-9 pr-4 py-3 rounded-xl text-xs text-white placeholder-slate-500 transition-all duration-300"
                 />
               </div>
             </div>
@@ -157,7 +157,7 @@ export const Auth: React.FC = () => {
                   placeholder="••••••••"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="w-full pl-9 pr-4 py-3 bg-[#051424] border border-[#334155] rounded-xl text-xs text-white placeholder-slate-500 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300"
+                  className="zen-glass-input w-full pl-9 pr-4 py-3 rounded-xl text-xs text-white placeholder-slate-500 transition-all duration-300"
                 />
               </div>
             </div>
@@ -165,7 +165,7 @@ export const Auth: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
-              className="w-full py-3 bg-gradient-to-r from-[#5B8CFF] to-[#7C5CFC] hover:brightness-110 disabled:opacity-50 text-slate-900 font-bold rounded-xl text-xs flex items-center justify-center gap-2 mt-2 shadow-lg shadow-primary/10 transition-all cursor-pointer"
+              className="zen-btn-primary w-full py-3 disabled:opacity-50 text-white font-bold rounded-full text-xs flex items-center justify-center gap-2 mt-2 transition-all cursor-pointer"
             >
               {loading ? (
                 <div className="w-5 h-5 border-2 border-slate-900 border-t-transparent rounded-full animate-spin" />
@@ -190,7 +190,7 @@ export const Auth: React.FC = () => {
           <button
             onClick={handleGoogleSignIn}
             disabled={loading}
-            className="w-full py-3 bg-[#051424] hover:bg-glass-bg border border-[#334155] text-slate-300 font-semibold rounded-xl text-xs flex items-center justify-center gap-2.5 transition-all mb-3 cursor-pointer"
+            className="zen-btn-secondary w-full py-3 text-slate-200 font-semibold rounded-full text-xs flex items-center justify-center gap-2.5 transition-all mb-3 cursor-pointer"
           >
             <svg className="w-4 h-4" viewBox="0 0 24 24">
               <path
