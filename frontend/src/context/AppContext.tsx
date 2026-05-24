@@ -702,6 +702,16 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       // Direct local simulation chatbot
       await new Promise(resolve => setTimeout(resolve, 1000));
       const q = message.toLowerCase().trim();
+
+      // Greeting detection — return a warm welcome before any financial checks
+      const isGreeting = /^(hi|hello|hey|howdy|greetings|namaste|good\s*(morning|afternoon|evening|day)|what'?s?\s*up|yo)\b/.test(q);
+      if (isGreeting) {
+        return {
+          message: `Hello! I'm **Zen AI Analyst**, your personal financial intelligence advisor.\n\nI'm here to help you with:\n- Analyzing your invoices and expense patterns\n- Identifying overspending and budget anomalies\n- Optimizing subscriptions and recurring charges\n- Tax and GST advisory\n- Investment and savings recommendations\n\nYou currently have **${invoices.length}** invoice(s) in your workspace. Go ahead — ask me anything about your finances!`,
+          suggestedPrompts: ['Where am I overspending?', 'Monthly summary', 'How to save?']
+        };
+      }
+
       const totalSpend = invoices.reduce((sum, inv) => sum + (inv.ocrResult?.amount || 0), 0);
       
       let response = `I've analyzed your **FinanceLens AI Workspace** (Total spend audited: **₹${totalSpend.toFixed(2)}** across **${invoices.length} invoices**). `;
@@ -715,6 +725,95 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const anomalies = completedInvoices.filter(inv => inv.ocrResult?.anomalyDetected);
       const subs = completedInvoices.filter(inv => inv.ocrResult?.isSubscription);
       const highestSpend = completedInvoices.length > 0 ? [...completedInvoices].sort((a, b) => (b.ocrResult?.amount || 0) - (a.ocrResult?.amount || 0))[0] : null;
+
+      // ── Conversation Memory ────────────────────────────────────────────────
+      // Detect short affirmative / negative replies and route them using the
+      // last assistant message as context so the chat "remembers" what it asked.
+      const isAffirmative = /^(yes|yeah|sure|ok|okay|yep|yup|absolutely|definitely|please|go ahead|of course|alright|sounds good|do it|let'?s (do it|go)|proceed|show me|tell me more|i do|i would|yes please)\b/.test(q);
+      const isNegative    = /^(no|nope|nah|not really|not now|skip|never mind|nevermind|cancel|stop|no thanks|don'?t)\b/.test(q);
+
+      const lastAssistantContent =
+        [...history].reverse().find(m => m.role === 'assistant')?.content?.toLowerCase() || '';
+
+      if ((isAffirmative || isNegative) && lastAssistantContent) {
+        // Build category breakdown helper (reused below)
+        const buildCategoryBreakdown = () => {
+          const catGroup: { [key: string]: number } = {};
+          completedInvoices.forEach(inv => {
+            const cat = inv.ocrResult?.category || 'Shopping';
+            catGroup[cat] = (catGroup[cat] || 0) + (inv.ocrResult?.amount || 0);
+          });
+          return Object.keys(catGroup)
+            .sort((a, b) => catGroup[b] - catGroup[a])
+            .map(cat => `- **${cat}**: ₹${catGroup[cat].toFixed(2)}`)
+            .join('\n');
+        };
+
+        if (isAffirmative) {
+          // ── YES replies ──────────────────────────────────────────────────
+          if (lastAssistantContent.includes('scenario simulator')) {
+            return {
+              message: `Let's do it! Here's how to use the **Scenario Simulator** on the right panel:\n\n- **Monthly Savings Increase** slider — drag to your target savings rate (5–50%)\n- **Expense Reduction Target** slider — set your cost-cutting goal (5–40%)\n\nThe **12-month projected cash gain** updates in real time. When the numbers look right, hit **Implement This Strategy** to lock them in.\n\nWould you like me to suggest optimal starting values based on your current spend of ₹${totalSpend.toFixed(2)}?`,
+              suggestedPrompts: ['Suggest optimal slider values', 'Audit recurring subscriptions', 'Monthly summary']
+            };
+          }
+          if (lastAssistantContent.includes('compare') || lastAssistantContent.includes('benchmark') || lastAssistantContent.includes('regional')) {
+            return {
+              message: `Here's how your spending stacks up against typical SMB benchmarks:\n\n- **Your Total Audited Spend**: ₹${totalSpend.toFixed(2)} across ${invoices.length} invoice(s)\n- **SMB Industry Benchmark**: ₹3,500–₹6,000/month\n- **Active Subscriptions**: ${subs.length > 0 ? `${subs.length} recurring charge(s) detected` : 'None flagged yet'}\n- **Anomaly Rate**: ${anomalies.length} flag(s) out of ${completedInvoices.length} audited invoices\n\nWould you like a full breakdown by expense category?`,
+              suggestedPrompts: ['Break down by category', 'Which subscriptions to cut?', 'How to save more?']
+            };
+          }
+          if (lastAssistantContent.includes('category') || lastAssistantContent.includes('breakdown')) {
+            const breakdown = buildCategoryBreakdown();
+            return {
+              message: `Here's your **Category Breakdown** across all audited invoices:\n\n${breakdown || '- No completed invoices yet'}\n\n**Total**: ₹${totalSpend.toFixed(2)}\n\nWould you like tips on reducing the highest category?`,
+              suggestedPrompts: ['Tips to reduce top category', 'Audit subscriptions', 'Monthly summary']
+            };
+          }
+          if (lastAssistantContent.includes('subscription') || lastAssistantContent.includes('saas')) {
+            const subTotal = subs.reduce((s, inv) => s + (inv.ocrResult?.amount || 0), 0);
+            return {
+              message: `Here's your **Subscription Audit**:\n\n${subs.length > 0
+                ? subs.map(s => `- **${s.ocrResult?.merchant}** — ₹${s.ocrResult?.amount?.toFixed(2)}/month`).join('\n')
+                : '- No active subscriptions flagged yet'}\n\n${subs.length > 0 ? `**Total recurring burn**: ₹${subTotal.toFixed(2)}/month\n\nConverting monthly plans to annual contracts typically saves **15–20%**. Want me to run those numbers?` : 'Upload more invoices and I can flag any recurring charges automatically.'}`,
+              suggestedPrompts: ['Run annual contract savings', 'Open Scenario Simulator', 'Where am I overspending?']
+            };
+          }
+          // Generic affirmative fallback
+          return {
+            message: `Sure! What would you like to explore next?\n\nI can help you with:\n- A detailed expense category breakdown\n- Savings and optimization strategies\n- Tax and GST advisory\n- Investment recommendations`,
+            suggestedPrompts: ['Where am I overspending?', 'Monthly summary', 'How to save?']
+          };
+        }
+
+        if (isNegative) {
+          // ── NO replies ───────────────────────────────────────────────────
+          if (lastAssistantContent.includes('scenario simulator')) {
+            return {
+              message: `No problem — the Scenario Simulator is always available on the right whenever you need it.\n\nWhat else can I help you with?`,
+              suggestedPrompts: ['Where am I overspending?', 'Monthly summary', 'Audit subscriptions']
+            };
+          }
+          if (lastAssistantContent.includes('category') || lastAssistantContent.includes('breakdown')) {
+            return {
+              message: `Alright! What else would you like to look into?\n\nI can help with overspending analysis, savings strategies, tax advisory, or investment recommendations.`,
+              suggestedPrompts: ['Where am I overspending?', 'How to save?', 'Monthly summary']
+            };
+          }
+          if (lastAssistantContent.includes('subscription')) {
+            return {
+              message: `Understood! Let me know if there's anything else you'd like to review — spending patterns, tax records, or budget optimization.`,
+              suggestedPrompts: ['Where am I overspending?', 'Monthly summary', 'Tax advisory']
+            };
+          }
+          // Generic negative fallback
+          return {
+            message: `Understood, no problem! Let me know if there's something else I can help you with.\n\nI'm here to assist with any financial queries about your invoices, expenses, or savings strategies.`,
+            suggestedPrompts: ['Where am I overspending?', 'Monthly summary', 'How to save?']
+          };
+        }
+      }
+      // ── End Conversation Memory ────────────────────────────────────────────
 
       if (isBadInvestmentOrOverspend) {
         if (completedInvoices.length > 0) {
@@ -788,6 +887,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         // 4. Dynamic Category Match
         const CATEGORIES = ['Food', 'Shopping', 'Travel', 'Medical', 'Utilities', 'Entertainment', 'Subscriptions', 'Education'];
         const matchedCategoryName = CATEGORIES.find(cat => q.includes(cat.toLowerCase()));
+
+        // Detect irrelevant (non-financial) queries and return a polite redirect
+        const financialKeywords = [
+          'invoice', 'receipt', 'expense', 'payment', 'merchant', 'financial', 'finance',
+          'money', 'rupee', 'rupees', 'dollar', 'audit', 'bill', 'transaction', 'account',
+          'spend', 'cost', 'price', 'amount', 'total', 'budget', 'save', 'saving', 'tax',
+          'gst', 'income', 'revenue', 'profit', 'loss', 'invest', 'subscription', 'category',
+          'ledger', 'vendor', 'fee', 'charge', 'cash', 'fund', 'stock', 'equity', 'interest',
+          'loan', 'debt', 'credit', 'salary', 'wage', 'purchase', 'buy', 'sell', 'rate', 'statement'
+        ];
+        const hasAnyFinancialIntent =
+          isTaxQuery || isBudgetQuery || isCreditScoreQuery || isInvestmentQuery ||
+          isDebtQuery || isCashFlowQuery || isInflationQuery || isRetirementQuery ||
+          !!matchedMerchantInv || !!matchedCategoryName ||
+          financialKeywords.some(kw => q.includes(kw));
+
+        if (!hasAnyFinancialIntent) {
+          return {
+            message: `I'm **Zen AI Analyst**, specialized in financial intelligence and invoice analysis.\n\nI'm not able to help with that query, but here's what I can do for you:\n- Audit your invoices and receipts\n- Identify spending patterns and anomalies\n- Budget optimization and savings strategies\n- Tax and GST advisory\n- Investment and retirement planning\n\nPlease ask me something related to your finances and I'll get right on it!`,
+            suggestedPrompts: ['Where am I overspending?', 'Monthly expense summary', 'How to save more?']
+          };
+        }
 
         if (isCreditScoreQuery) {
           response += `\n\n**Dun & Bradstreet & Credit Score Advisory**:\n`;
@@ -894,7 +1015,7 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           response += `*   **Risk Factors**: We have flagged **${anomalies.length}** anomaly entries in your current session.\n\nYou can ask me specific questions about these merchants, categories, or tax filings, and I will parse them instantly!`;
           suggestedPrompts = ['Where are my bad investments?', `Audit ${topCategory} category`, 'How much to save?'];
         } else {
-          response += `\n\nAs the **Zen AI Analyst**, I'm auditing your financial transaction pipeline. Ask me about overspending leaks, bad investments, or subscription optimizations.`;
+          response += `\n\nAs the **Zen AI Analyst**, I'm ready to help you get started. Upload some invoices to your workspace, then ask me about spending patterns, overspending leaks, or savings opportunities.`;
         }
       }
 

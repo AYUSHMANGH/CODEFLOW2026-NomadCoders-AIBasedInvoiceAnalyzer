@@ -10,6 +10,95 @@ interface Message {
   content: string;
 }
 
+// Renders inline markdown tokens: **bold** and *italic*
+const renderInline = (text: string): React.ReactNode => {
+  const parts = text.split(/(\*\*[^*\n]+\*\*|\*[^*\n]+\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (/^\*\*[^*]+\*\*$/.test(part)) {
+          return <strong key={i} className="font-semibold text-white">{part.slice(2, -2)}</strong>;
+        }
+        if (/^\*[^*]+\*$/.test(part)) {
+          return <em key={i} className="text-slate-200 not-italic font-medium">{part.slice(1, -1)}</em>;
+        }
+        return <span key={i}>{part}</span>;
+      })}
+    </>
+  );
+};
+
+// Renders a full AI message with proper paragraphs, bullet lists, and numbered lists
+const renderMessageContent = (content: string): React.ReactNode => {
+  const blocks = content.split(/\n\n+/);
+  return (
+    <div className="flex flex-col gap-2.5">
+      {blocks.map((block, bIdx) => {
+        const lines = block.split('\n').filter(l => l.trim() !== '');
+        if (lines.length === 0) return null;
+
+        const isBullet = (l: string) => /^\s*[\*\-]\s{1,4}/.test(l);
+        const isNumbered = (l: string) => /^\s*\d+\.\s+/.test(l);
+
+        const allBullets = lines.every(isBullet);
+        const allNumbered = lines.every(isNumbered);
+
+        if (allBullets) {
+          return (
+            <ul key={bIdx} className="flex flex-col gap-1.5 pl-1">
+              {lines.map((line, lIdx) => (
+                <li key={lIdx} className="flex items-start gap-2">
+                  <span className="text-cyan-400 mt-[3px] flex-shrink-0 text-[8px]">●</span>
+                  <span className="flex-1">{renderInline(line.replace(/^\s*[\*\-]\s{1,4}/, ''))}</span>
+                </li>
+              ))}
+            </ul>
+          );
+        }
+
+        if (allNumbered) {
+          return (
+            <ol key={bIdx} className="flex flex-col gap-1.5 pl-1">
+              {lines.map((line, lIdx) => (
+                <li key={lIdx} className="flex items-start gap-2">
+                  <span className="text-[#818CF8] font-bold font-mono flex-shrink-0 min-w-[18px]">{lIdx + 1}.</span>
+                  <span className="flex-1">{renderInline(line.replace(/^\s*\d+\.\s+/, ''))}</span>
+                </li>
+              ))}
+            </ol>
+          );
+        }
+
+        // Mixed or plain block — render line by line
+        return (
+          <div key={bIdx} className="flex flex-col gap-1.5">
+            {lines.map((line, lIdx) => {
+              if (isBullet(line)) {
+                return (
+                  <div key={lIdx} className="flex items-start gap-2">
+                    <span className="text-cyan-400 mt-[3px] flex-shrink-0 text-[8px]">●</span>
+                    <span className="flex-1">{renderInline(line.replace(/^\s*[\*\-]\s{1,4}/, ''))}</span>
+                  </div>
+                );
+              }
+              if (isNumbered(line)) {
+                const match = line.match(/^\s*(\d+)\.\s+/);
+                return (
+                  <div key={lIdx} className="flex items-start gap-2">
+                    <span className="text-[#818CF8] font-bold font-mono flex-shrink-0 min-w-[18px]">{match?.[1]}.</span>
+                    <span className="flex-1">{renderInline(line.replace(/^\s*\d+\.\s+/, ''))}</span>
+                  </div>
+                );
+              }
+              return <p key={lIdx} className="leading-relaxed">{renderInline(line.trim())}</p>;
+            })}
+          </div>
+        );
+      })}
+    </div>
+  );
+};
+
 export const Advisor: React.FC = () => {
   const { sendAdvisorMessage, invoices, budgetLimit } = useApp();
   const [messages, setMessages] = useState<Message[]>([
@@ -137,7 +226,7 @@ export const Advisor: React.FC = () => {
                   {/* Message bubble */}
                   <div
                     className={`
-                      p-4 rounded-2xl text-xs leading-relaxed whitespace-pre-line
+                      p-4 rounded-2xl text-xs leading-relaxed
                       ${
                         m.role === 'user'
                           ? 'bg-[#5B8CFF] text-slate-950 font-bold rounded-tr-none'
@@ -145,7 +234,7 @@ export const Advisor: React.FC = () => {
                       }
                     `}
                   >
-                    {m.content}
+                    {m.role === 'assistant' ? renderMessageContent(m.content) : m.content}
                   </div>
                 </div>
               ))}
