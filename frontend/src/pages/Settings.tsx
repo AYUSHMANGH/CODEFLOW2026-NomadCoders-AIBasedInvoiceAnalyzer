@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
 import { GlassCard } from '../components/GlassCard';
+import { DeleteAccountModal } from '../components/DeleteAccountModal';
 import {
   User,
   Shield,
@@ -11,7 +12,8 @@ import {
   Download,
   AlertCircle,
   Sparkles,
-  Check
+  Check,
+  Trash2
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
@@ -22,6 +24,7 @@ export const Settings: React.FC = () => {
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [weeklyAlerts, setWeeklyAlerts] = useState(true);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -214,9 +217,41 @@ export const Settings: React.FC = () => {
                 </div>
               </div>
             </GlassCard>
+
+            {/* Danger Zone — only shown for real (non-guest) users */}
+            {user && !user.isGuest && (
+              <GlassCard className="border border-error/30 flex flex-col gap-5 !p-6">
+                <div className="flex items-center gap-2 border-b border-error/20 pb-3">
+                  <Trash2 className="w-4.5 h-4.5 text-error" />
+                  <h4 className="text-xs font-bold text-error tracking-wide font-mono">Danger Zone</h4>
+                </div>
+
+                <div className="flex flex-col gap-3 text-left">
+                  <p className="text-[10px] text-slate-400 leading-relaxed">
+                    Permanently delete your account and all associated session data.
+                    This action <span className="text-error font-bold">cannot be undone</span>.
+                  </p>
+
+                  <button
+                    id="open-delete-account-modal-btn"
+                    onClick={() => setShowDeleteModal(true)}
+                    className="w-full py-3 rounded-xl bg-error/10 border border-error/30 text-error font-black text-xs flex items-center justify-center gap-2 hover:bg-error/20 hover:border-error/60 active:scale-95 transition-all duration-200 cursor-pointer"
+                  >
+                    <Trash2 className="w-4 h-4" />
+                    <span>Delete Account</span>
+                  </button>
+                </div>
+              </GlassCard>
+            )}
           </div>
         </div>
       </div>
+
+      {/* Delete Account Modal */}
+      <DeleteAccountModal
+        isOpen={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
+      />
     </AppLayout>
   );
 };

@@ -7,7 +7,11 @@ import {
   signOut, 
   onAuthStateChanged,
   updateProfile,
-  sendPasswordResetEmail
+  sendPasswordResetEmail,
+  reauthenticateWithCredential,
+  reauthenticateWithPopup,
+  EmailAuthProvider,
+  deleteUser
 } from 'firebase/auth';
 import { auth } from '../firebase';
 
@@ -29,6 +33,8 @@ interface AuthContextType {
   loginAsGuest: () => void;
   logout: () => Promise<void>;
   resetPassword: (email: string) => Promise<void>;
+  deleteAccount: (password?: string) => Promise<void>;
+  isGoogleUser: () => boolean;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -130,6 +136,46 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     console.log('Reset link dispatched to:', email);
   };
 
+  // Returns true if the current Firebase user signed in with Google
+  const isGoogleUser = (): boolean => {
+    if (!auth.currentUser) return false;
+    return auth.currentUser.providerData.some(
+      (provider) => provider.providerId === 'google.com'
+    );
+  };
+
+  /**
+   * Permanently deletes the authenticated user's account.
+   * - For email/password users: re-authenticates using the provided password first.
+   * - For Google users: re-authenticates via Google popup.
+   * - Then calls Firebase deleteUser(), clears localStorage, resets state.
+   */
+  const deleteAccount = async (password?: string): Promise<void> => {
+    const currentUser = auth.currentUser;
+    if (!currentUser) {
+      throw new Error('No authenticated user found.');
+    }
+
+    // Re-authenticate before deletion (Firebase requires recent auth)
+    if (isGoogleUser()) {
+      const provider = new GoogleAuthProvider();
+      await reauthenticateWithPopup(currentUser, provider);
+    } else {
+      if (!password) {
+        throw new Error('Password is required to delete your account.');
+      }
+      const credential = EmailAuthProvider.credential(currentUser.email!, password);
+      await reauthenticateWithCredential(currentUser, credential);
+    }
+
+    // Delete the Firebase Auth account
+    await deleteUser(currentUser);
+
+    // Clean up local state
+    setUser(null);
+    localStorage.removeItem('financelens_session');
+  };
+
   return (
     <AuthContext.Provider
       value={{
@@ -140,7 +186,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         loginWithGoogle,
         loginAsGuest,
         logout,
-        resetPassword
+        resetPassword,
+        deleteAccount,
+        isGoogleUser
       }}
     >
       {children}
