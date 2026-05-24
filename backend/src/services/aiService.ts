@@ -113,6 +113,30 @@ async function performLocalTesseractOcr(fileBuffer: Buffer): Promise<string> {
 }
 
 /**
+ * Helper: Parse PDF text robustly supporting standard CJS function exports and modern class-based ESM/CJS exports.
+ */
+async function extractTextFromPdf(fileBuffer: Buffer): Promise<string> {
+  const pdfModule = require('pdf-parse');
+  if (typeof pdfModule === 'function') {
+    const parsed = await pdfModule(fileBuffer);
+    return parsed?.text || '';
+  } else if (pdfModule && pdfModule.PDFParse) {
+    const uint8Array = new Uint8Array(fileBuffer);
+    const parser = new pdfModule.PDFParse(uint8Array);
+    await parser.load();
+    if (typeof parser.text === 'string') {
+      return parser.text;
+    }
+    const result = await parser.getText();
+    if (typeof result === 'string') {
+      return result;
+    }
+    return (result as any)?.text || '';
+  }
+  throw new Error('Unsupported pdf-parse module format');
+}
+
+/**
  * Helper: Extract text between outer '{' and '}' and strip markdown wrappers
  */
 function cleanJsonString(str: string): string {
@@ -545,8 +569,7 @@ export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, 
     if (fileType === 'application/pdf') {
       try {
         console.log('FinanceLens OCR: Parsing PDF text locally...');
-        const parsed = await pdf(fileBuffer);
-        extractedText = parsed?.text || '';
+        extractedText = await extractTextFromPdf(fileBuffer);
         console.log(`FinanceLens OCR: Local PDF parse extracted ${extractedText.length} characters.`);
       } catch (err: any) {
         console.error("Local PDF parsing failed, falling back to OCR.space:", err.message || err);
