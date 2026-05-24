@@ -884,14 +884,91 @@ Your budget is in ${budgetScore > 800 ? 'strong' : 'critical'} standing. Take ac
     `;
     suggestedPrompts = ['Where am I overspending?', 'Run high-fidelity OCR scan', 'Export workspace data'];
   } else {
-    reply += `
+    // 1. Dynamic Tax/GST Query Match
+    const isTaxQuery = q.includes('tax') || q.includes('gst') || q.includes('vat') || q.includes('reclaim') || q.includes('taxable');
+    const isBudgetQuery = q.includes('budget') || q.includes('limit') || q.includes('threshold') || q.includes('burn');
+    
+    // 2. Dynamic Merchant Match
+    const matchedMerchantInv = completedInvoices.find(inv => {
+      const mName = inv.ocrResult?.merchant?.toLowerCase() || '';
+      return mName.length > 2 && q.includes(mName);
+    });
+
+    // 3. Dynamic Category Match
+    const matchedCategoryName = CATEGORIES.find(cat => q.includes(cat.toLowerCase()));
+
+    if (isTaxQuery && completedInvoices.length > 0) {
+      let totalTax = completedInvoices.reduce((sum, inv) => sum + (inv.ocrResult?.tax || 0), 0);
+      let reclaimable = completedInvoices.reduce((sum, inv) => {
+        if (['Utilities', 'Travel', 'Subscriptions'].includes(inv.ocrResult?.category || '')) {
+          return sum + (inv.ocrResult?.tax || 0);
+        }
+        return sum;
+      }, 0);
+
+      reply += `\n\n**Tax & GST Audit Report**:\n`;
+      reply += `*   **Total Tax Paid**: ₹${totalTax.toFixed(2)} across processed invoices.\n`;
+      reply += `*   **Reclaimable Business Tax**: ₹${reclaimable.toFixed(2)} (from Utilities, Travel, and Subscription categories).\n`;
+      reply += `*   **Action Plan**: You can download these records in CSV format from the settings panel to process your corporate tax returns.`;
+      suggestedPrompts = ['Export tax records', 'Monthly summary', 'Where am I overspending?'];
+    } else if (isBudgetQuery) {
+      const percentage = (totalSpend / monthlyBudgetLimit) * 100;
+      reply += `\n\n**Budget Allocation Analysis**:\n`;
+      reply += `*   **Monthly Budget Limit**: ₹${monthlyBudgetLimit.toFixed(2)}\n`;
+      reply += `*   **Current Audited Outflow**: ₹${totalSpend.toFixed(2)} (${percentage.toFixed(1)}% burned).\n`;
+      reply += `*   **Status**: ${percentage > 100 ? '🔴 Over budget! Action required to settle anomalies.' : '🟢 Under budget. Capital reserves are stable.'}\n\nTo update your limits, move to the **Settings** or drag the sliders in the Scenario Simulator.`;
+      suggestedPrompts = ['Open Scenario Simulator', 'Audit recurring subscriptions', 'Explain my monthly budget limit'];
+    } else if (matchedMerchantInv) {
+      const merchant = matchedMerchantInv.ocrResult?.merchant;
+      const merchantInvoices = completedInvoices.filter(inv => inv.ocrResult?.merchant?.toLowerCase() === merchant.toLowerCase());
+      const merchantTotal = merchantInvoices.reduce((sum, inv) => sum + (inv.ocrResult?.amount || 0), 0);
+
+      reply += `\n\n**Merchant Deep-Dive [${merchant}]**:\n`;
+      reply += `I found **${merchantInvoices.length}** active transaction(s) from **${merchant}** in your database totaling **₹${merchantTotal.toFixed(2)}**:\n`;
+      merchantInvoices.forEach(inv => {
+        reply += `-   *Invoice ${inv.ocrResult?.invoiceNumber}* (${inv.ocrResult?.date}): **₹${inv.ocrResult?.amount.toFixed(2)}** (${inv.ocrResult?.category})\n`;
+      });
+      if (matchedMerchantInv.ocrResult?.anomalyDetected) {
+        reply += `\n⚠️ Note: This merchant has transactions flagged as **anomalous**: *"${matchedMerchantInv.ocrResult?.anomalyDescription}"*`;
+      }
+      suggestedPrompts = [`How to save on ${merchant}?`, 'Back to ledger overview', 'Cancel this subscription'];
+    } else if (matchedCategoryName && completedInvoices.length > 0) {
+      const catInvoices = completedInvoices.filter(inv => inv.ocrResult?.category?.toLowerCase() === matchedCategoryName.toLowerCase());
+      const catTotal = catInvoices.reduce((sum, inv) => sum + (inv.ocrResult?.amount || 0), 0);
+
+      reply += `\n\n**Category Spend Audit [${matchedCategoryName}]**:\n`;
+      reply += `Expenditure in **${matchedCategoryName}** sums up to **₹${catTotal.toFixed(2)}** across **${catInvoices.length}** invoices:\n`;
+      catInvoices.slice(0, 4).forEach(inv => {
+        reply += `-   **${inv.ocrResult?.merchant}** (Invoice: ${inv.ocrResult?.invoiceNumber}) on ${inv.ocrResult?.date}: **₹${inv.ocrResult?.amount.toFixed(2)}**\n`;
+      });
+      suggestedPrompts = [`Consolidate ${matchedCategoryName}`, 'Optimize SaaS pricing', 'Audit recurring subscriptions'];
+    } else if (completedInvoices.length > 0) {
+      const uniqueMerchants = Array.from(new Set(completedInvoices.map(inv => inv.ocrResult?.merchant))).slice(0, 5);
+      
+      // Calculate top category spend
+      const categoryGroup: { [key: string]: number } = {};
+      completedInvoices.forEach((inv) => {
+        const cat = inv.ocrResult?.category || 'Shopping';
+        categoryGroup[cat] = (categoryGroup[cat] || 0) + (inv.ocrResult?.amount || 0);
+      });
+      const topCategory = Object.keys(categoryGroup).sort((a,b) => categoryGroup[b] - categoryGroup[a])[0] || 'Shopping';
+      const topCategorySpend = categoryGroup[topCategory] || 0;
+
+      reply += `\n\nHere is a tailored workspace review relative to your query:\n`;
+      reply += `*   **Active Ledger Merchants**: Processing bills from *${uniqueMerchants.join(', ')}*.\n`;
+      reply += `*   **Top Expense Concentration**: **${topCategory}** represents your primary outflow, at **₹${topCategorySpend.toFixed(2)}**.\n`;
+      reply += `*   **Risk Factors**: We have flagged **${anomalies.length}** anomaly entries in your current session.\n\nYou can ask me specific questions about these merchants, categories, or tax filings, and I will parse them instantly!`;
+      suggestedPrompts = ['Where are my bad investments?', `Audit ${topCategory} category`, 'How much to save?'];
+    } else {
+      reply += `
 I am the **Zen AI Analyst** at your service. I can help you audit your invoices, locate financial leakages, optimize subscriptions, or simulate savings strategies. 
 
 You can ask me questions like:
 *   *Where are my bad investments?*
 *   *How much can I save on my SaaS subscriptions?*
 *   *Explain my monthly expense breakdown.*
-    `;
+      `;
+    }
   }
 
   return {
