@@ -17,7 +17,7 @@ import {
   Fingerprint
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import financelensLogo from '../assets/financelens-logo.svg';
+import financelensLogo from '../assets/logo.png';
 
 export const Landing: React.FC = () => {
   const navigate = useNavigate();
@@ -80,7 +80,7 @@ export const Landing: React.FC = () => {
           <img
             src={financelensLogo}
             alt="FinanceLens Logo"
-            className="w-9 h-9 object-contain drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]"
+            className="w-9 h-9 object-contain rounded-lg drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]"
           />
           <div className="flex flex-col leading-none">
             <span className="font-geist font-extrabold text-sm text-white tracking-wide">
@@ -386,7 +386,7 @@ export const Landing: React.FC = () => {
             <img
               src={financelensLogo}
               alt="FinanceLens Logo"
-              className="w-8 h-8 object-contain drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]"
+              className="w-8 h-8 object-contain rounded-lg drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]"
             />
             <span className="font-geist font-extrabold text-xs text-white">
               © {new Date().getFullYear()} FinanceLens AI. Precision Intelligence for Finance.

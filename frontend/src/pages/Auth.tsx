@@ -4,7 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { Mail, Lock, User, Key, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import financelensLogo from '../assets/financelens-logo.svg';
+import financelensLogo from '../assets/logo.png';
 
 export const Auth: React.FC = () => {
   const { loginWithEmail, signupWithEmail, loginWithGoogle, loginAsGuest } = useAuth();
@@ -68,7 +68,7 @@ export const Auth: React.FC = () => {
           <img
             src={financelensLogo}
             alt="FinanceLens Logo"
-            className="w-32 h-32 object-contain mx-auto drop-shadow-[0_0_16px_rgba(0,229,255,0.55)] animate-bounce"
+            className="w-32 h-32 object-contain rounded-2xl mx-auto drop-shadow-[0_0_16px_rgba(0,229,255,0.55)] animate-bounce"
           />
           <p className="text-slate-400 text-xs mt-1.5 font-mono">Turn invoices into financial intelligence.</p>
         </div>

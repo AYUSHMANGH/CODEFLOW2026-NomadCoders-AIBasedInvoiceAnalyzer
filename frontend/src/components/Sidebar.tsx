@@ -1,8 +1,9 @@
 import React from 'react';
-import financelensLogo from '../assets/financelens-logo.svg';
+import financelensLogo from '../assets/logo.png';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
+import { motion } from 'framer-motion';
 import {
   LayoutDashboard,
   UploadCloud,
@@ -65,12 +66,12 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
         `}
       >
         <div className="flex flex-col gap-8">
-          {/* App Logo & Header */}
-          <div className="flex items-center justify-center">
+          {/* App Logo & Header - Fixed smaller logo */}
+          <div className="flex items-center justify-center select-none py-2">
             <img
               src={financelensLogo}
               alt="FinanceLens Logo"
-              className="w-28 h-28 object-contain drop-shadow-[0_0_12px_rgba(0,229,255,0.5)]"
+              className="w-20 h-20 object-contain rounded-2xl drop-shadow-[0_0_12px_rgba(0,229,255,0.55)] transition-transform duration-300 hover:scale-105"
             />
           </div>
 
@@ -89,25 +90,31 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
             </div>
           </div>
 
-          {/* Navigation items */}
+          {/* Navigation items - With smooth hover micro-animations */}
           <nav className="flex flex-col gap-1.5">
             {navItems.map((item) => (
-              <NavLink
+              <motion.div
                 key={item.name}
-                to={item.path}
-                onClick={onClose}
-                className={({ isActive }) => `
-                  flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200
-                  ${
-                    isActive
-                      ? 'bg-gradient-to-r from-primary/25 to-secondary/15 border-l-4 border-primary text-white shadow-md shadow-primary/5'
-                      : 'text-slate-400 hover:text-white hover:bg-glass-bg border-l-4 border-transparent'
-                  }
-                `}
+                whileHover={{ x: 4, scale: 1.01 }}
+                whileTap={{ scale: 0.99 }}
+                transition={{ type: 'spring', stiffness: 350, damping: 25 }}
               >
-                <item.icon className="w-5 h-5" />
-                <span>{item.name}</span>
-              </NavLink>
+                <NavLink
+                  to={item.path}
+                  onClick={onClose}
+                  className={({ isActive }) => `
+                    flex items-center gap-3.5 px-4 py-3 rounded-xl text-sm font-medium transition-all duration-200 w-full
+                    ${
+                      isActive
+                        ? 'bg-gradient-to-r from-primary/25 to-secondary/15 border-l-4 border-primary text-white shadow-md shadow-primary/5'
+                        : 'text-slate-400 hover:text-white hover:bg-glass-bg border-l-4 border-transparent'
+                    }
+                  `}
+                >
+                  <item.icon className="w-5 h-5" />
+                  <span>{item.name}</span>
+                </NavLink>
+              </motion.div>
             ))}
           </nav>
 
