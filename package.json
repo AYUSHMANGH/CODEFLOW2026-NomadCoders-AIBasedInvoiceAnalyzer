@@ -1,0 +1,24 @@
+{
+  "name": "codeflow2026-nomadcoders-aibasedinvoiceanalyzer",
+  "version": "1.0.0",
+  "description": "> **Turn invoices into financial intelligence.**",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer/issues"
+  },
+  "homepage": "https://github.com/AYUSHMANGH/CODEFLOW2026-NomadCoders-AIBasedInvoiceAnalyzer#readme",
+  "dependencies": {
+    "vite": "^8.0.14"
+  }
+}
