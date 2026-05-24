@@ -888,16 +888,66 @@ Your budget is in ${budgetScore > 800 ? 'strong' : 'critical'} standing. Take ac
     const isTaxQuery = q.includes('tax') || q.includes('gst') || q.includes('vat') || q.includes('reclaim') || q.includes('taxable');
     const isBudgetQuery = q.includes('budget') || q.includes('limit') || q.includes('threshold') || q.includes('burn');
     
-    // 2. Dynamic Merchant Match
+    // 2. Structural Financial Consultant Queries
+    const isCreditScoreQuery = q.includes('credit') || q.includes('cibil') || q.includes('score') || q.includes('rating');
+    const isInvestmentQuery = q.includes('mutual fund') || q.includes('stock') || q.includes('portfolio') || q.includes('yield') || q.includes('equity') || q.includes('investing') || q.includes('shares') || q.includes('fd');
+    const isDebtQuery = q.includes('loan') || q.includes('debt') || q.includes('leverage') || q.includes('borrow') || q.includes('funding') || q.includes('mortgage') || q.includes('banks');
+    const isCashFlowQuery = q.includes('cash flow') || q.includes('runway') || q.includes('burn rate') || q.includes('liquidity') || q.includes('cashflow') || q.includes('capital');
+    const isInflationQuery = q.includes('inflation') || q.includes('recession') || q.includes('economy') || q.includes('economic') || q.includes('market');
+    const isRetirementQuery = q.includes('retirement') || q.includes('epf') || q.includes('ppf') || q.includes('pension') || q.includes('nps');
+
+    // 3. Dynamic Merchant Match
     const matchedMerchantInv = completedInvoices.find(inv => {
       const mName = inv.ocrResult?.merchant?.toLowerCase() || '';
       return mName.length > 2 && q.includes(mName);
     });
 
-    // 3. Dynamic Category Match
+    // 4. Dynamic Category Match
     const matchedCategoryName = CATEGORIES.find(cat => q.includes(cat.toLowerCase()));
 
-    if (isTaxQuery && completedInvoices.length > 0) {
+    if (isCreditScoreQuery) {
+      reply += `\n\n**Dun & Bradstreet & Credit Score Advisory**:\n`;
+      reply += `Commercial and personal credit scores are the gateway to institutional scale. To optimize them:\n`;
+      reply += `*   **Vendor Net-30 Compliance**: Paying suppliers within early windows directly triggers positive commercial reports.\n`;
+      reply += `*   **Maintain Low Utilization**: Keep your commercial credit card and overdraft utilization strictly below **30%**.\n`;
+      reply += `*   **Prune Redundant Loans**: Avoid submitting multiple credit inquiry applications within a short 90-day window, as it indicates liquidity stress.\n\n*Zen Consultant Tip*: For personal credit (CIBIL/FICO), pay revolving card balances *before* the statement generation date to report a 10% utilization rate!`;
+      suggestedPrompts = ['How is my budget score calculated?', 'Where are my bad investments?', 'Monthly summary'];
+    } else if (isInvestmentQuery) {
+      reply += `\n\n**Corporate Treasury & Mutual Fund Blueprint**:\n`;
+      reply += `Leaving corporate surpluses in a standard zero-yield current account is an operational leak. Let's redirect capital:\n`;
+      reply += `*   **Liquid Mutual Funds**: Perfect for parking OpEx runway. They feature T+1 redemption and outpace standard current accounts.\n`;
+      reply += `*   **Arbitrage Funds**: Tax-efficient equity-savings wrappers suited for companies in high tax brackets.\n`;
+      reply += `*   **Treasury Bills (T-Bills)**: Risk-free government-backed debt, ideal for holding non-operational reserves (91 to 364 days).\n\n*Zen Advisory Recommendation*: Lock 3 months of emergency buffer in liquid funds, and allocate 20% of profits to diversified growth mutual funds.`;
+      suggestedPrompts = ['Where are my bad investments?', 'Open Scenario Simulator', 'How to save?'];
+    } else if (isDebtQuery) {
+      reply += `\n\n**Debt Optimization & Leverage Review**:\n`;
+      reply += `Leverage is a powerful engine if structured correctly. To maximize your capital structure:\n`;
+      reply += `*   **Debt-to-Equity Ratio**: Keep this metric under **1.5** to qualify for premium banking lines.\n`;
+      reply += `*   **WACC Optimization**: Secure a business line of credit *while your balance sheet is healthy*—banks reject applicants during cash flow emergencies.\n`;
+      reply += `*   **Match Asset Durations**: Funded equipment or land should use long-term debt, while inventory should use short-term trade credit.\n\nWould you like to model a debt scenario in our Scenario Simulator?`;
+      suggestedPrompts = ['Open Scenario Simulator', 'Audit my SaaS expenses', 'Where am I overspending?'];
+    } else if (isCashFlowQuery) {
+      reply += `\n\n**Cash Flow Runway & Liquidity Advisory**:\n`;
+      reply += `Cash flow is the literal oxygen of operations. Let's optimize yours:\n`;
+      reply += `*   **Runway Target**: Maintain at least **3 to 6 months** of total operational OpEx parked in liquid reserves.\n`;
+      reply += `*   **Accelerate DSO (Days Sales Outstanding)**: Offer clients a 2% discount for payments completed within 10 days to collect receivables faster.\n`;
+      reply += `*   **Decelerate DPO (Days Payable Outstanding)**: Work with your key vendors to extend payment windows to 45 days, keeping liquidity in your accounts longer.`;
+      suggestedPrompts = ['View my monthly budget limit', 'Explain my monthly expense breakdown', 'How to save?'];
+    } else if (isInflationQuery) {
+      reply += `\n\n**Inflation Hedging & Macro Strategy**:\n`;
+      reply += `In a high-inflation environment, holding idle cash represents an active loss in purchasing power. Hedging tactics:\n`;
+      reply += `*   **Lock long-term rates**: Convert monthly subscriptions and S3 utility hosting (e.g. AWS) to reserved, long-term contracts.\n`;
+      reply += `*   **Lock Vendor Pricing**: Renegotiate supply agreements to freeze standard transaction rates for 12 to 18 months.\n`;
+      reply += `*   **Audit Leaks**: Eliminate duplicate SaaS tools to expand your net profit buffer.`;
+      suggestedPrompts = ['Audit recurring subscriptions', 'Where are my bad investments?', 'Monthly summary'];
+    } else if (isRetirementQuery) {
+      reply += `\n\n**Retirement wealth & Tax Shield Advice (PPF, NPS)**:\n`;
+      reply += `Building wealth requires maximizing tax exemptions. Focus on these premium avenues:\n`;
+      reply += `*   **Public Provident Fund (PPF)**: Invest ₹1.5L early in April to capitalize on compound interest. Returns are tax-exempt (EEE structure).\n`;
+      reply += `*   **National Pension System (NPS)**: Route employee contributions via corporate NPS models to claim additional tax benefits under Section 80CCD.\n`;
+      reply += `*   **Asset Allocation**: Maintain an equity mutual fund weight of (100 minus your age) to beat inflation over multi-decade horizons.`;
+      suggestedPrompts = ['Export tax records', 'How much to save?', 'Monthly summary'];
+    } else if (isTaxQuery && completedInvoices.length > 0) {
       let totalTax = completedInvoices.reduce((sum, inv) => sum + (inv.ocrResult?.tax || 0), 0);
       let reclaimable = completedInvoices.reduce((sum, inv) => {
         if (['Utilities', 'Travel', 'Subscriptions'].includes(inv.ocrResult?.category || '')) {
