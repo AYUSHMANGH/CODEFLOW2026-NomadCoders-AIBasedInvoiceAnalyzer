@@ -961,9 +961,10 @@ Your budget is in ${budgetScore > 800 ? 'strong' : 'critical'} standing. Take ac
       reply += `*   **Action Plan**: You can download these records in CSV format from the settings panel to process your corporate tax returns.`;
       suggestedPrompts = ['Export tax records', 'Monthly summary', 'Where am I overspending?'];
     } else if (isBudgetQuery) {
-      const percentage = (totalSpend / monthlyBudgetLimit) * 100;
+      const budgetLimitDefault = 5000;
+      const percentage = (totalSpend / budgetLimitDefault) * 100;
       reply += `\n\n**Budget Allocation Analysis**:\n`;
-      reply += `*   **Monthly Budget Limit**: ₹${monthlyBudgetLimit.toFixed(2)}\n`;
+      reply += `*   **Monthly Budget Limit**: ₹${budgetLimitDefault.toFixed(2)}\n`;
       reply += `*   **Current Audited Outflow**: ₹${totalSpend.toFixed(2)} (${percentage.toFixed(1)}% burned).\n`;
       reply += `*   **Status**: ${percentage > 100 ? '🔴 Over budget! Action required to settle anomalies.' : '🟢 Under budget. Capital reserves are stable.'}\n\nTo update your limits, move to the **Settings** or drag the sliders in the Scenario Simulator.`;
       suggestedPrompts = ['Open Scenario Simulator', 'Audit recurring subscriptions', 'Explain my monthly budget limit'];
