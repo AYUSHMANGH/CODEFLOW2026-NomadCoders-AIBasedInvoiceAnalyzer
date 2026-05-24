@@ -9,6 +9,7 @@ const pdf: any = require('pdf-parse');
 // API Key Configurations
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
 const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
+const OCR_SPACE_API_KEY = process.env.OCR_SPACE_API_KEY || 'K82990749088957';
 
 export interface ExtractedInvoice {
   isValidInvoice: boolean;
@@ -52,7 +53,7 @@ const CATEGORIES = [
  * Helper: Perform OCR using OCR.space API with the user's API key
  */
 async function performOcrSpace(fileBuffer: Buffer, fileName: string, fileType: string): Promise<string> {
-  const apikey = 'K82990749088957';
+  const apikey = OCR_SPACE_API_KEY;
   const url = 'https://api.ocr.space/parse/image';
   
   console.log(`OCR.space API: Initiating scan for file "${fileName}"...`);
@@ -525,10 +526,8 @@ export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, 
     if (fileType === 'application/pdf') {
       try {
         console.log('FinanceLens OCR: Parsing PDF text locally...');
-        const parser = new pdf.PDFParse({ data: fileBuffer });
-        const parsed = await parser.getText();
+        const parsed = await pdf(fileBuffer);
         extractedText = parsed?.text || '';
-        await parser.destroy();
         console.log(`FinanceLens OCR: Local PDF parse extracted ${extractedText.length} characters.`);
       } catch (err: any) {
         console.error("Local PDF parsing failed, falling back to OCR.space:", err.message || err);
