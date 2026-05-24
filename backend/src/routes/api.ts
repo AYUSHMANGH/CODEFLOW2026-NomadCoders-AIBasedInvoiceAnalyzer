@@ -16,7 +16,8 @@ import {
   triggerCustomSummary,
   getBudgetSettings,
   updateBudgetSettings,
-  getAdvisorChat
+  getAdvisorChat,
+  triggerHighRiskAlert
 } from '../controllers/apiController';
 
 const router = Router();
@@ -70,6 +71,9 @@ router.post('/invoices/:id/reprocess', reprocessInvoice);
 router.delete('/invoices/:id', deleteInvoice);
 
 router.post('/advisor/chat', getAdvisorChat);
+
+// Budget High Risk email alert
+router.post('/alert/high-risk', triggerHighRiskAlert);
 
 // Middleware helpers
 function triggerSummaryMiddleware(req: any, res: any, next: any) {

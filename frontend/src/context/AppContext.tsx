@@ -39,9 +39,12 @@ interface DashboardStats {
   invoicesCount: number;
   pendingInvoices: number;
   budgetScore: number;
+  targetBudget: number;
+  spendingRisk: 'Low Risk' | 'Moderate Risk' | 'High Risk';
+  spendPercent: number;
   savingsOpportunity: number;
   monthlySpendData: Array<{ name: string; Budgeted: number; Actual: number }>;
-  categoryChart: Array<{ name: string; value: number }>;
+  categoryChart: Array<{ name: string; value: number; amount?: number }>;
   merchantChart: Array<{ name: string; amount: number }>;
   aiSummary: string;
   recommendations: Array<{ title: string; description: string; impact: string; category: string }>;
@@ -76,6 +79,7 @@ interface AppContextType {
   triggerCustomAISummary: () => Promise<void>;
   sendAdvisorMessage: (message: string, history: Array<{ role: string; content: string }>) => Promise<any>;
   updateBudgetLimit: (limit: number) => Promise<void>;
+  sendHighRiskAlert: (spend: number, target: number) => Promise<void>;
 }
 
 const AppContext = createContext<AppContextType | undefined>(undefined);
@@ -178,18 +182,29 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const calculateClientDashboard = () => {
     const completed = invoices.filter(i => i.status === 'completed');
     const totalSpend = completed.reduce((sum, item) => sum + (item.ocrResult?.amount || 0), 0);
-    const pendingCount = invoices.filter(i => i.status !== 'completed').length;
+    // Pending = all invoices that are not yet completed (uploaded but unprocessed)
+    const pendingCount = invoices.length;
 
-    // Calculate budget health score (0-1000 scale)
-    let budgetScore = 1000;
-    const percentage = totalSpend / budgetLimit;
-    if (percentage > 1.2) {
-      budgetScore = Math.max(200, Math.round(850 - (percentage - 1.2) * 500));
-    } else if (percentage > 0.8) {
-      budgetScore = Math.round(950 - (percentage - 0.8) * 350);
+    // --- Spending Risk Calculation ---
+    const spendRatio = budgetLimit > 0 ? totalSpend / budgetLimit : 0;
+    const spendPercent = parseFloat((spendRatio * 100).toFixed(1));
+    let spendingRisk: 'Low Risk' | 'Moderate Risk' | 'High Risk';
+    if (spendRatio < 0.7) {
+      spendingRisk = 'Low Risk';
+    } else if (spendRatio <= 1.0) {
+      spendingRisk = 'Moderate Risk';
     } else {
-      budgetScore = Math.round(1000 - percentage * 100);
+      spendingRisk = 'High Risk';
     }
+
+    // Trigger email alert if High Risk (fire-and-forget, non-blocking)
+    if (spendingRisk === 'High Risk') {
+      sendHighRiskAlert(totalSpend, budgetLimit).catch(() => {});
+    }
+
+    // --- Budget Score: shown as ₹spent / ₹target ---
+    // budgetScore stores the raw totalSpend; Dashboard renders it as ₹x / ₹target
+    const budgetScore = parseFloat(totalSpend.toFixed(2));
 
     // Category chart mapping
     const catGroup: { [key: string]: number } = {};
@@ -200,7 +215,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const categoryChart = Object.keys(catGroup).map(c => ({
       name: c,
-      value: parseFloat(catGroup[c].toFixed(2))
+      value: totalSpend > 0 ? parseFloat(((catGroup[c] / totalSpend) * 100).toFixed(2)) : 0,
+      amount: parseFloat(catGroup[c].toFixed(2))
     }));
 
     // Top merchants mapping
@@ -262,24 +278,60 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
 
     const savingsOpportunity = parseFloat((totalSpend * 0.12).toFixed(2));
 
-    // Dynamic monthly spend data (clean slate, zero dummy actuals!)
-    const monthlySpendData = [
-      { name: 'Jan', Budgeted: 3500, Actual: 0 },
-      { name: 'Feb', Budgeted: 3500, Actual: 0 },
-      { name: 'Mar', Budgeted: 3800, Actual: 0 },
-      { name: 'Apr', Budgeted: 3800, Actual: 0 },
-      { name: 'May', Budgeted: 4000, Actual: 0 },
-      { name: 'Jun', Budgeted: 4000, Actual: 0 },
-      { name: 'Jul', Budgeted: 4500, Actual: 0 },
-      { name: 'Aug', Budgeted: budgetLimit, Actual: 0 }
+    // --- Spending Graph: X-axis with actual invoice dates or baseline first day of month ---
+    const now = new Date();
+    const currentYear = now.getFullYear();
+    const currentMonth = now.getMonth(); // 0-indexed
+    const currentMonthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][currentMonth];
+
+    const parseInvoiceDate = (dateStr?: string) => {
+      if (!dateStr) return null;
+      const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+      if (match) {
+        return {
+          year: parseInt(match[1], 10),
+          month: parseInt(match[2], 10) - 1,
+          day: parseInt(match[3], 10)
+        };
+      }
+      const d = new Date(dateStr);
+      if (isNaN(d.getTime())) return null;
+      return {
+        year: d.getFullYear(),
+        month: d.getMonth(),
+        day: d.getDate()
+      };
+    };
+
+    const currentMonthInvoices = completed.filter(item => {
+      const p = parseInvoiceDate(item.ocrResult?.date);
+      return p && p.year === currentYear && p.month === currentMonth;
+    });
+
+    const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+    const weekBoundaries = [7, 14, 21, daysInMonth];
+    const weekLabels = [
+      `01 ${currentMonthName}`,
+      `08 ${currentMonthName}`,
+      `15 ${currentMonthName}`,
+      `22 ${currentMonthName}`
     ];
 
-    completed.forEach(item => {
-      const month = getMonthName(item.ocrResult?.date);
-      const monthData = monthlySpendData.find(m => m.name === month);
-      if (monthData) {
-        monthData.Actual = parseFloat((monthData.Actual + (item.ocrResult?.amount || 0)).toFixed(2));
-      }
+    const monthlySpendData = weekLabels.map((label, idx) => {
+      const weekEndDay = weekBoundaries[idx];
+
+      const cumActual = currentMonthInvoices
+        .filter(item => {
+          const p = parseInvoiceDate(item.ocrResult?.date);
+          return p && p.day <= weekEndDay;
+        })
+        .reduce((sum, item) => sum + (item.ocrResult?.amount || 0), 0);
+
+      return {
+        name: label,
+        Budgeted: budgetLimit,
+        Actual: parseFloat(cumActual.toFixed(2))
+      };
     });
 
     setDashboardStats({
@@ -287,11 +339,14 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       invoicesCount: invoices.length,
       pendingInvoices: pendingCount,
       budgetScore,
+      targetBudget: budgetLimit,
+      spendingRisk,
+      spendPercent,
       savingsOpportunity,
       monthlySpendData,
       categoryChart,
       merchantChart,
-      aiSummary: `Local Sandbox Analysis: You have audited ${completed.length} receipts representing ₹${totalSpend.toFixed(2)} in Q3. Overall budget efficiency stands at ${budgetScore}/1000. Travel charges are currently flagged.`,
+      aiSummary: `Local Sandbox Analysis: You have audited ${completed.length} receipts representing ₹${totalSpend.toFixed(2)}. Budget risk level: ${spendingRisk}. Spending is at ${spendPercent}% of ₹${budgetLimit} target.`,
       recommendations,
       alerts
     });
@@ -364,6 +419,20 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     });
   };
 
+  // Send High Risk budget alert email via backend
+  const sendHighRiskAlert = async (spend: number, target: number): Promise<void> => {
+    try {
+      await fetch(`${API_BASE_URL}/alert/high-risk`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ spend, target, overspend: parseFloat((spend - target).toFixed(2)) })
+      });
+    } catch (e) {
+      // Silently log — alert failure must not block dashboard
+      console.warn('High Risk email alert could not be sent:', e);
+    }
+  };
+
   // API Call wrappers
   const fetchDashboardData = async () => {
     if (serverOffline) {
@@ -374,7 +443,28 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       const response = await fetch(`${API_BASE_URL}/dashboard`);
       if (response.ok) {
         const data = await response.json();
-        setDashboardStats(data);
+        // Enrich server response with risk fields if not already present
+        const totalSpend: number = data.totalSpend || 0;
+        const target: number = data.targetBudget || budgetLimit;
+        const ratio = target > 0 ? totalSpend / target : 0;
+        const spendPercent = parseFloat((ratio * 100).toFixed(1));
+        let spendingRisk: 'Low Risk' | 'Moderate Risk' | 'High Risk';
+        if (ratio < 0.7) spendingRisk = 'Low Risk';
+        else if (ratio <= 1.0) spendingRisk = 'Moderate Risk';
+        else spendingRisk = 'High Risk';
+
+        if (spendingRisk === 'High Risk') {
+          sendHighRiskAlert(totalSpend, target).catch(() => {});
+        }
+
+        setDashboardStats({
+          ...data,
+          targetBudget: target,
+          spendingRisk,
+          spendPercent,
+          // Budget score = raw spend amount for ₹x/₹y display
+          budgetScore: parseFloat(totalSpend.toFixed(2))
+        });
       }
     } catch (e) {
       setServerOffline(true);
@@ -1072,7 +1162,8 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
         deleteInvoiceDoc,
         triggerCustomAISummary,
         sendAdvisorMessage,
-        updateBudgetLimit
+        updateBudgetLimit,
+        sendHighRiskAlert
       }}
     >
       {children}

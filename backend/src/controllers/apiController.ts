@@ -3,6 +3,84 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { extractInvoiceData, generateInsightsFromInvoices, getAdvisorChatResponse } from '../services/aiService';
 
+// ─── Email Alert Helper ────────────────────────────────────────────────────────
+// Uses nodemailer with Ethereal (test) credentials when SMTP_USER/PASS not set,
+// so the alert never hard-crashes the server even without email configuration.
+async function sendHighRiskEmailAlert(spend: number, target: number, overspend: number): Promise<void> {
+  try {
+    // Dynamic import so missing nodemailer doesn't crash on startup
+    const nodemailer = await import('nodemailer').catch(() => null);
+    if (!nodemailer) {
+      console.warn('[HighRisk Alert] nodemailer not installed – skipping email send.');
+      return;
+    }
+
+    const adminEmail = process.env.ALERT_ADMIN_EMAIL || 'admin@financelens.ai';
+    const smtpUser   = process.env.SMTP_USER;
+    const smtpPass   = process.env.SMTP_PASS;
+
+    let transporter: any;
+    if (smtpUser && smtpPass) {
+      transporter = nodemailer.createTransport({
+        host: process.env.SMTP_HOST || 'smtp.gmail.com',
+        port: parseInt(process.env.SMTP_PORT || '587'),
+        secure: false,
+        auth: { user: smtpUser, pass: smtpPass }
+      });
+    } else {
+      // Create a test Ethereal account so email preview still works in dev
+      const testAccount = await nodemailer.createTestAccount();
+      transporter = nodemailer.createTransport({
+        host: 'smtp.ethereal.email',
+        port: 587,
+        secure: false,
+        auth: { user: testAccount.user, pass: testAccount.pass }
+      });
+    }
+
+    const info = await transporter.sendMail({
+      from: `"FinanceLens AI" <${smtpUser || 'alerts@financelens.ai'}>`,
+      to: adminEmail,
+      subject: '⚠️ HIGH RISK Budget Alert – FinanceLens',
+      html: `
+        <div style="font-family:Arial,sans-serif;background:#0F172A;color:#F8FAFC;padding:32px;border-radius:12px;max-width:560px">
+          <h2 style="color:#FF5A5F;margin-top:0">⚠️ High Risk Spending Alert</h2>
+          <p style="color:#94A3B8">Your FinanceLens workspace has detected an <strong style="color:#FF5A5F">overspend</strong> condition for the current period.</p>
+          <table style="width:100%;border-collapse:collapse;margin-top:20px">
+            <tr style="border-bottom:1px solid #1E293B">
+              <td style="padding:12px 0;color:#64748B;font-size:13px">Current Actual Spend</td>
+              <td style="padding:12px 0;text-align:right;font-weight:bold;color:#F8FAFC;font-size:16px">₹${spend.toLocaleString()}</td>
+            </tr>
+            <tr style="border-bottom:1px solid #1E293B">
+              <td style="padding:12px 0;color:#64748B;font-size:13px">Target Budget</td>
+              <td style="padding:12px 0;text-align:right;font-weight:bold;color:#22D3EE;font-size:16px">₹${target.toLocaleString()}</td>
+            </tr>
+            <tr>
+              <td style="padding:12px 0;color:#64748B;font-size:13px">Overspending Amount</td>
+              <td style="padding:12px 0;text-align:right;font-weight:bold;color:#FF5A5F;font-size:16px">₹${overspend.toLocaleString()}</td>
+            </tr>
+          </table>
+          <div style="margin-top:24px;padding:16px;background:#1E293B;border-radius:8px;border-left:4px solid #FF5A5F">
+            <p style="margin:0;font-size:13px;color:#F1F5F9">
+              <strong>Action Required:</strong> Your actual spend has exceeded the configured budget target by 
+              <strong style="color:#FF5A5F">₹${overspend.toLocaleString()}</strong>. 
+              Please review your invoices immediately and take corrective action to restore financial health.
+            </p>
+          </div>
+          <p style="margin-top:20px;font-size:11px;color:#475569">This is an automated alert from FinanceLens AI. Login to your dashboard to review details.</p>
+        </div>
+      `
+    });
+
+    console.log('[HighRisk Alert] Email sent – MessageId:', info.messageId);
+    // If using Ethereal, print preview URL
+    const previewUrl = nodemailer.getTestMessageUrl ? nodemailer.getTestMessageUrl(info) : null;
+    if (previewUrl) console.log('[HighRisk Alert] Preview URL:', previewUrl);
+  } catch (err) {
+    console.error('[HighRisk Alert] Failed to send email:', err);
+  }
+}
+
 const getMonthName = (dateStr?: string): string => {
   if (!dateStr) return '';
   const date = new Date(dateStr);
@@ -193,28 +271,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   
   // Metrics sums
   const totalSpend = completedInvoices.reduce((sum, item) => sum + (item.ocrResult?.amount || 0), 0);
-  const pendingCount = localInvoiceDB.filter(item => item.status !== 'completed').length;
-  
-  // Growth dynamic data (initially zero dummy data!)
-  const monthlySpendData = [
-    { name: 'Jan', Budgeted: 3500, Actual: 0 },
-    { name: 'Feb', Budgeted: 3500, Actual: 0 },
-    { name: 'Mar', Budgeted: 3800, Actual: 0 },
-    { name: 'Apr', Budgeted: 3800, Actual: 0 },
-    { name: 'May', Budgeted: 4000, Actual: 0 },
-    { name: 'Jun', Budgeted: 4000, Actual: 0 },
-    { name: 'Jul', Budgeted: 4500, Actual: 0 },
-    { name: 'Aug', Budgeted: budgetLimit, Actual: 0 }
-  ];
-
-  completedInvoices.forEach(item => {
-    const month = getMonthName(item.ocrResult?.date);
-    const monthData = monthlySpendData.find(m => m.name === month);
-    if (monthData) {
-      monthData.Actual = parseFloat((monthData.Actual + (item.ocrResult?.amount || 0)).toFixed(2));
-    }
-  });
-
   // Category aggregate
   const categorySummary: { [key: string]: number } = {};
   completedInvoices.forEach(item => {
@@ -224,7 +280,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
 
   const categoryChart = Object.keys(categorySummary).map(cat => ({
     name: cat,
-    value: parseFloat(categorySummary[cat].toFixed(2))
+    value: totalSpend > 0 ? parseFloat(((categorySummary[cat] / totalSpend) * 100).toFixed(2)) : 0,
+    amount: parseFloat(categorySummary[cat].toFixed(2))
   }));
 
   // Top Merchants aggregate
@@ -239,13 +296,86 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     amount: parseFloat(merchantSummary[m].toFixed(2))
   })).sort((a, b) => b.amount - a.amount).slice(0, 5);
 
+  // --- Spending Risk Calculation ---
+  const spendRatio = budgetLimit > 0 ? totalSpend / budgetLimit : 0;
+  const spendPercent = parseFloat((spendRatio * 100).toFixed(1));
+  let spendingRisk: 'Low Risk' | 'Moderate Risk' | 'High Risk';
+  if (spendRatio < 0.7) spendingRisk = 'Low Risk';
+  else if (spendRatio <= 1.0) spendingRisk = 'Moderate Risk';
+  else spendingRisk = 'High Risk';
+
+  // Trigger email alert (fire-and-forget) if High Risk
+  if (spendingRisk === 'High Risk') {
+    sendHighRiskEmailAlert(totalSpend, budgetLimit, parseFloat((totalSpend - budgetLimit).toFixed(2))).catch(() => {});
+  }
+
+  // --- Spending Graph: X-axis with actual invoice dates or baseline first day of month ---
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth(); // 0-indexed
+
+  const parseInvoiceDate = (dateStr?: string) => {
+    if (!dateStr) return null;
+    const match = dateStr.match(/^(\d{4})-(\d{2})-(\d{2})/);
+    if (match) {
+      return {
+        year: parseInt(match[1], 10),
+        month: parseInt(match[2], 10) - 1,
+        day: parseInt(match[3], 10)
+      };
+    }
+    const d = new Date(dateStr);
+    if (isNaN(d.getTime())) return null;
+    return {
+      year: d.getFullYear(),
+      month: d.getMonth(),
+      day: d.getDate()
+    };
+  };
+
+  // Only completed invoices from the current month
+  const currentMonthInvoices = completedInvoices.filter(item => {
+    const p = parseInvoiceDate(item.ocrResult?.date);
+    return p && p.year === currentYear && p.month === currentMonth;
+  });
+
+  const currentMonthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][currentMonth];
+  const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
+  const weekBoundaries = [7, 14, 21, daysInMonth];
+  const weekLabels = [
+    `01 ${currentMonthName}`,
+    `08 ${currentMonthName}`,
+    `15 ${currentMonthName}`,
+    `22 ${currentMonthName}`
+  ];
+
+  const monthlySpendData = weekLabels.map((label, idx) => {
+    const weekEndDay = weekBoundaries[idx];
+
+    const cumActual = currentMonthInvoices
+      .filter(item => {
+        const p = parseInvoiceDate(item.ocrResult?.date);
+        return p && p.day <= weekEndDay;
+      })
+      .reduce((sum, item) => sum + (item.ocrResult?.amount || 0), 0);
+
+    return {
+      name: label,
+      Budgeted: budgetLimit,
+      Actual: parseFloat(cumActual.toFixed(2))
+    };
+  });
+
   const insights = generateInsightsFromInvoices(completedInvoices, budgetLimit);
 
   return res.status(200).json({
     totalSpend: parseFloat(totalSpend.toFixed(2)),
     invoicesCount: localInvoiceDB.length,
-    pendingInvoices: pendingCount,
-    budgetScore: insights.budgetScore,
+    pendingInvoices: localInvoiceDB.length,
+    budgetScore: parseFloat(totalSpend.toFixed(2)),
+    targetBudget: budgetLimit,
+    spendingRisk,
+    spendPercent,
     monthlySpendData,
     categoryChart,
     merchantChart,
@@ -369,4 +499,22 @@ export const getAdvisorChat = async (req: Request, res: Response) => {
   const response = await getAdvisorChatResponse(message, completedInvoices, history || []);
   
   return res.status(200).json(response);
+};
+
+// High Risk Budget Alert endpoint
+export const triggerHighRiskAlert = async (req: Request, res: Response) => {
+  const { spend, target, overspend } = req.body;
+  if (spend === undefined || target === undefined) {
+    return res.status(400).json({ error: 'Missing spend or target values' });
+  }
+  try {
+    await sendHighRiskEmailAlert(
+      parseFloat(spend),
+      parseFloat(target),
+      parseFloat(overspend ?? (spend - target))
+    );
+    return res.status(200).json({ success: true, message: 'High Risk alert email dispatched.' });
+  } catch (err: any) {
+    return res.status(500).json({ error: err.message });
+  }
 };

@@ -16,11 +16,13 @@ import {
 } from 'lucide-react';
 import {
   ResponsiveContainer,
-  AreaChart,
+  ComposedChart,
+  Bar,
   Area,
   XAxis,
   YAxis,
   Tooltip,
+  ReferenceLine,
   PieChart,
   Pie,
   Cell
@@ -59,11 +61,25 @@ export const Dashboard: React.FC = () => {
     invoicesCount,
     pendingInvoices,
     budgetScore,
+    targetBudget,
+    spendingRisk,
+    spendPercent,
     monthlySpendData,
     categoryChart,
     recommendations,
     alerts
   } = dashboardStats;
+
+  // Current month label for the chart
+  const currentMonthLabel = ['January','February','March','April','May','June','July','August','September','October','November','December'][new Date().getMonth()];
+
+  // Dynamic Y-axis max: 2× the highest of (maxActual spend, targetBudget), minimum 1000
+  const maxActual = Math.max(...monthlySpendData.map(d => d.Actual), 0);
+  const yAxisMax = Math.max(Math.ceil(Math.max(maxActual, targetBudget ?? 5000) * 2 / 1000) * 1000, 1000);
+
+  // Risk color mapping
+  const riskColor = spendingRisk === 'High Risk' ? '#FF5A5F' : spendingRisk === 'Moderate Risk' ? '#FFB547' : '#1ED760';
+  const riskBgClass = spendingRisk === 'High Risk' ? 'bg-error/15 border-error/35 text-error' : spendingRisk === 'Moderate Risk' ? 'bg-warning/15 border-warning/35 text-warning' : 'bg-success/15 border-success/35 text-success';
 
   // Modern Chart Colors (Tailwind v4 mapped)
   const PIE_COLORS = ['#22D3EE', '#7C5CFC', '#5B8CFF', '#1ED760', '#FFB547', '#FF5A5F', '#E2E8F0'];
@@ -105,39 +121,39 @@ export const Dashboard: React.FC = () => {
             </div>
             {/* Small subtle progress bar */}
             <div className="w-full bg-[#1E293B] h-1 rounded-full overflow-hidden mt-4">
-              <div className="bg-primary h-full w-[65%]" />
+              <div className="bg-primary h-full" style={{ width: `${Math.min(spendPercent, 100)}%` }} />
             </div>
           </GlassCard>
 
-          {/* Processed Count */}
+          {/* Pending Invoices */}
           <GlassCard className="border border-glass-border flex flex-col justify-between" hoverEffect>
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Pending Invoices</span>
-                <h3 className="text-2xl font-mono font-extrabold text-white mt-2">{pendingInvoices} Invoices</h3>
+                <h3 className="text-2xl font-mono font-extrabold text-white mt-2">{invoicesCount} Invoices</h3>
               </div>
               <span className="text-[9px] bg-warning/15 border border-warning/35 text-warning font-mono font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5">
-                24 Flagged
+                {pendingInvoices} Uploaded
               </span>
             </div>
             <div className="w-full bg-[#1E293B] h-1 rounded-full overflow-hidden mt-4">
-              <div className="bg-warning h-full w-[35%]" />
+              <div className="bg-warning h-full" style={{ width: `${invoicesCount > 0 ? Math.min(100, (pendingInvoices / Math.max(invoicesCount, 1)) * 100) : 0}%` }} />
             </div>
           </GlassCard>
 
-          {/* Monthly Growth */}
+          {/* Monthly Growth / Risk */}
           <GlassCard className="border border-glass-border flex flex-col justify-between" hoverEffect>
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Monthly Growth</span>
-                <h3 className="text-2xl font-mono font-extrabold text-white mt-2">Low Risk</h3>
+                <h3 className="text-2xl font-mono font-extrabold text-white mt-2" style={{ color: riskColor }}>{spendingRisk}</h3>
               </div>
               <div className="w-8 h-8 rounded-xl bg-secondary/15 flex items-center justify-center text-secondary border border-secondary/20">
                 <TrendingUp className="w-4 h-4" />
               </div>
             </div>
             <div className="w-full bg-[#1E293B] h-1 rounded-full overflow-hidden mt-4">
-              <div className="bg-[#7C5CFC] h-full w-[85%]" />
+              <div className="h-full" style={{ width: `${Math.min(spendPercent, 100)}%`, backgroundColor: riskColor }} />
             </div>
           </GlassCard>
 
@@ -146,14 +162,14 @@ export const Dashboard: React.FC = () => {
             <div className="flex justify-between items-start">
               <div>
                 <span className="text-[10px] font-mono text-slate-500 uppercase tracking-wider block">Budget Score</span>
-                <h3 className="text-2xl font-mono font-extrabold text-[#1ED760] mt-2">{budgetScore} <span className="text-[10px] text-slate-500 font-normal">/1000</span></h3>
+                <h3 className="text-2xl font-mono font-extrabold text-[#1ED760] mt-2">₹{budgetScore.toLocaleString()} <span className="text-[10px] text-slate-500 font-normal">/ ₹{(targetBudget ?? 5000).toLocaleString()}</span></h3>
               </div>
-              <span className="text-[9px] bg-cyan/15 border border-cyan/35 text-cyan font-mono font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5">
-                Optimized
+              <span className={`text-[9px] border font-mono font-extrabold px-2 py-0.5 rounded-full inline-block mt-0.5 ${riskBgClass}`}>
+                {spendPercent}%
               </span>
             </div>
             <div className="w-full bg-[#1E293B] h-1 rounded-full overflow-hidden mt-4">
-              <div className="bg-cyan h-full w-[84%]" />
+              <div className="bg-cyan h-full" style={{ width: `${Math.min(spendPercent, 100)}%` }} />
             </div>
           </GlassCard>
         </div>
@@ -165,7 +181,7 @@ export const Dashboard: React.FC = () => {
             <div className="flex justify-between items-center border-b border-[#1E293B] pb-3">
               <div>
                 <h4 className="text-xs font-bold text-white tracking-wide font-mono">Spending Trends</h4>
-                <p className="text-[10px] text-slate-500 mt-0.5">Jan to Aug Budgeted vs. Actual outputs</p>
+                <p className="text-[10px] text-slate-500 mt-0.5">{currentMonthLabel} — Actual vs. Target Budget</p>
               </div>
               <div className="flex items-center gap-4 text-[9px] font-mono">
                 <div className="flex items-center gap-1.5">
@@ -181,26 +197,37 @@ export const Dashboard: React.FC = () => {
 
             <div className="h-64 w-full">
               <ResponsiveContainer width="100%" height="100%">
-                <AreaChart data={monthlySpendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                <ComposedChart data={monthlySpendData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                   <defs>
-                    <linearGradient id="colorBudgeted" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#22D3EE" stopOpacity={0.15}/>
-                      <stop offset="95%" stopColor="#22D3EE" stopOpacity={0}/>
-                    </linearGradient>
                     <linearGradient id="colorActual" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#7C5CFC" stopOpacity={0.25}/>
-                      <stop offset="95%" stopColor="#7C5CFC" stopOpacity={0}/>
+                      <stop offset="5%" stopColor="#7C5CFC" stopOpacity={0.6}/>
+                      <stop offset="95%" stopColor="#7C5CFC" stopOpacity={0.2}/>
                     </linearGradient>
                   </defs>
                   <XAxis dataKey="name" stroke="#64748B" fontSize={10} tickLine={false} />
-                  <YAxis stroke="#64748B" fontSize={10} tickLine={false} />
+                  <YAxis
+                    stroke="#64748B"
+                    fontSize={10}
+                    tickLine={false}
+                    domain={[0, yAxisMax]}
+                    tickFormatter={(v: number) => v >= 1000 ? `${(v/1000).toFixed(0)}k` : `${v}`}
+                  />
                   <Tooltip
                     contentStyle={{ background: '#0F172A', borderColor: '#334155', borderRadius: '12px', fontSize: '11px', color: '#F8FAFC' }}
                     labelStyle={{ fontWeight: 'bold', color: '#FFF' }}
+                    formatter={(value: any, name: any) => [`₹${Number(value).toLocaleString()}`, String(name)]}
                   />
-                  <Area type="monotone" dataKey="Budgeted" stroke="#22D3EE" strokeWidth={2} fillOpacity={1} fill="url(#colorBudgeted)" />
-                  <Area type="monotone" dataKey="Actual" stroke="#7C5CFC" strokeWidth={2.5} fillOpacity={1} fill="url(#colorActual)" />
-                </AreaChart>
+                  {/* Flat horizontal budget reference line */}
+                  <ReferenceLine
+                    y={targetBudget ?? 5000}
+                    stroke="#22D3EE"
+                    strokeWidth={2}
+                    strokeDasharray="6 3"
+                    label={{ value: 'Budget', position: 'right', fontSize: 9, fill: '#22D3EE' }}
+                  />
+                  {/* Actual spend bars — rise only from real invoice data */}
+                  <Bar dataKey="Actual" fill="url(#colorActual)" stroke="#7C5CFC" strokeWidth={1.5} radius={[4, 4, 0, 0]} maxBarSize={48} />
+                </ComposedChart>
               </ResponsiveContainer>
             </div>
           </GlassCard>
@@ -212,12 +239,18 @@ export const Dashboard: React.FC = () => {
             <div className="flex-1 flex flex-col justify-center items-center relative h-48">
               <div className="absolute flex flex-col justify-center items-center">
                 <span className="text-[10px] text-slate-500 font-mono uppercase leading-none">Total spend</span>
-                <span className="text-xl font-mono font-extrabold text-white mt-1.5">₹{totalSpend.toLocaleString()}</span>
+                <span className={`font-mono font-extrabold text-white mt-1.5 transition-all ${
+                  `₹${totalSpend.toLocaleString()}`.length > 12 ? 'text-[11px]' :
+                  `₹${totalSpend.toLocaleString()}`.length > 9 ? 'text-xs' :
+                  `₹${totalSpend.toLocaleString()}`.length > 7 ? 'text-sm' : 'text-base'
+                }`}>
+                  ₹{totalSpend.toLocaleString()}
+                </span>
               </div>
               <ResponsiveContainer width="100%" height="100%">
                 <PieChart>
                   <Pie
-                    data={categoryChart.length > 0 ? categoryChart : [{ name: 'Shopping', value: 1 }]}
+                    data={categoryChart.length > 0 ? categoryChart : [{ name: 'Shopping', value: 100 }]}
                     cx="50%"
                     cy="50%"
                     innerRadius={55}
@@ -225,7 +258,7 @@ export const Dashboard: React.FC = () => {
                     paddingAngle={3}
                     dataKey="value"
                   >
-                    {categoryChart.map((entry, index) => (
+                    {(categoryChart.length > 0 ? categoryChart : [{ name: 'Shopping', value: 100 }]).map((entry, index) => (
                       <Cell key={`cell-${index}`} fill={PIE_COLORS[index % PIE_COLORS.length]} />
                     ))}
                   </Pie>
@@ -235,8 +268,9 @@ export const Dashboard: React.FC = () => {
 
             {/* Compact custom legends with percentages */}
             <div className="flex flex-col gap-2.5 mt-4">
-              {categoryChart.map((entry, index) => {
-                const pct = totalSpend > 0 ? ((entry.value / totalSpend) * 100).toFixed(0) : '0';
+              {categoryChart.map((entry: any, index) => {
+                const pct = entry.value.toFixed(0);
+                const amount = entry.amount !== undefined ? entry.amount : entry.value;
                 return (
                   <div key={entry.name} className="flex justify-between items-center text-xs">
                     <div className="flex items-center gap-2">
@@ -245,7 +279,7 @@ export const Dashboard: React.FC = () => {
                     </div>
                     <div className="text-right">
                       <span className="text-white font-mono font-bold">{pct}%</span>
-                      <span className="text-[10px] text-slate-500 font-mono ml-2">₹{entry.value.toLocaleString()}</span>
+                      <span className="text-[10px] text-slate-500 font-mono ml-2">₹{amount.toLocaleString()}</span>
                     </div>
                   </div>
                 );
