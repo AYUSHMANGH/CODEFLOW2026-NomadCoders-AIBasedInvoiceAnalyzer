@@ -763,9 +763,57 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (serverOffline) {
       await new Promise(resolve => setTimeout(resolve, 1500));
       if (dashboardStats) {
+        const completed = invoices.filter(i => i.status === 'completed');
+        const totalSpend = completed.reduce((sum, item) => sum + (item.ocrResult?.amount || 0), 0);
+        const percent = budgetLimit > 0 ? (totalSpend / budgetLimit) * 100 : 0;
+        
+        let localSummary = "";
+        if (completed.length === 0) {
+          localSummary = `No active invoices detected in the workspace. Upload SaaS statements, bills, or travel receipts to let Zen AI analyze your budget health. Currently, your spending is ₹0 of your ₹${budgetLimit.toLocaleString()} monthly limit, leaving 100% of your runway intact.`;
+        } else {
+          if (percent > 100) {
+            localSummary += `🔴 CRITICAL OVERSPEND (Sandbox Mode): Your budget is extremely tight, having consumed ₹${totalSpend.toLocaleString()} which is ${percent.toFixed(0)}% of your ₹${budgetLimit.toLocaleString()} monthly limit. `;
+          } else if (percent > 80) {
+            localSummary += `⚠️ BUDGET WARNING (Sandbox Mode): Your budget is highly compressed, with utilization sitting at ${percent.toFixed(0)}% (₹${totalSpend.toLocaleString()} spent out of ₹${budgetLimit.toLocaleString()}). `;
+          } else {
+            localSummary += `🟢 OPTIMIZED SPENDING (Sandbox Mode): Your outlays are running perfectly on track, consuming only ${percent.toFixed(0)}% of your ₹${budgetLimit.toLocaleString()} monthly allowance. `;
+          }
+
+          // Find top category
+          const catGroup: { [key: string]: number } = {};
+          completed.forEach(item => {
+            const cat = item.ocrResult?.category || 'Shopping';
+            catGroup[cat] = (catGroup[cat] || 0) + (item.ocrResult?.amount || 0);
+          });
+          const sortedCats = Object.entries(catGroup).sort((a, b) => b[1] - a[1]);
+
+          if (sortedCats.length > 0) {
+            const [topCat, topAmt] = sortedCats[0];
+            const topPct = (topAmt / totalSpend) * 100;
+            localSummary += `We detected a heavy concentration in ${topCat} representing ₹${topAmt.toLocaleString()} (${topPct.toFixed(0)}% of your spend). `;
+            
+            if (topCat === 'Subscriptions' || topCat === 'Software') {
+              localSummary += `Actionable optimization: Consolidate active SaaS licenses or negotiate annual pricing to immediately save up to 15%. `;
+            } else if (topCat === 'Travel') {
+              localSummary += `Actionable optimization: Restrict late-notice flight bookings and set pre-approval guidelines for employee rideshares. `;
+            } else if (topCat === 'Utilities') {
+              localSummary += `Actionable optimization: Audit cloud servers (like S3/EC2) and shut down idle developer machines after 6 PM. `;
+            } else {
+              localSummary += `Actionable optimization: Review recent high-value items in ${topCat} to prune non-essential procurement. `;
+            }
+          }
+
+          const anomalies = completed.filter(inv => inv.ocrResult?.anomalyDetected);
+          if (anomalies.length > 0) {
+            localSummary += `Additionally, you have ${anomalies.length} anomalous transactions (e.g. at ${anomalies[0].ocrResult?.merchant || 'Merchant'}) which represent active leakage.`;
+          } else {
+            localSummary += `All parsed invoices comply perfectly with standard compliance metrics, keeping your risk index highly optimized.`;
+          }
+        }
+
         setDashboardStats({
           ...dashboardStats,
-          aiSummary: 'Sandbox Workspace Refreshed: Core SaaS expenditures show healthy balances. Travel spending audits are complete.'
+          aiSummary: localSummary
         });
       }
       return;

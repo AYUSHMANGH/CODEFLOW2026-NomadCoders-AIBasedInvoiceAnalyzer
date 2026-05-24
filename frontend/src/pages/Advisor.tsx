@@ -24,7 +24,7 @@ interface Message {
 }
 
 const WELCOME_MESSAGE =
-  "I've audited your **Q3 ledger database**.\n\nI noticed your **'Professional Services'** category has spiked by **22%** this quarter. This was primarily driven by recent legal retainer adjustments.\n\nWould you like me to compare these rates against regional benchmarks or analyze your recurring subscription leaks?";
+  "Hello and welcome! I am **Zen AI Analyst**, your premium virtual financial advisor. 🌟\n\nI've completed an autonomous audit of your workspace transactions and Q3 ledger database. Here is a quick initial update:\n\n- I noticed your **'Professional Services'** category has spiked by **22%** this quarter. This was primarily driven by recent legal retainer adjustments.\n\nWould you like me to compare these rates against regional benchmarks or analyze your recurring subscription leaks?";
 
 // Renders inline markdown tokens with colors matching ai_page.png
 const renderInline = (text: string, isAssistant: boolean): React.ReactNode => {

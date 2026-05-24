@@ -624,6 +624,20 @@ export const Insights: React.FC = () => {
                     }
                   </p>
                 </div>
+
+                {/* AI Executive Summary Report */}
+                {dashboardStats?.aiSummary && (
+                  <div className="mt-4 p-4 rounded-2xl bg-[#0F172A]/85 border border-[#7C5CFC]/30 shadow-[0_0_15px_rgba(124,92,252,0.1)] flex flex-col items-start gap-2 text-left relative overflow-hidden group hover:border-[#22D3EE]/50 transition-all duration-300">
+                    <div className="absolute top-0 right-0 w-24 h-24 bg-gradient-to-tr from-[#7C5CFC]/10 to-transparent rounded-bl-full pointer-events-none" />
+                    <div className="flex items-center gap-1.5 text-[9px] font-mono font-extrabold text-[#bdc2ff] uppercase tracking-wider">
+                      <Sparkles className="w-3.5 h-3.5 text-[#22D3EE] animate-pulse" />
+                      <span>Zen AI Budget Summary</span>
+                    </div>
+                    <p className="text-[10.5px] text-slate-200 leading-relaxed font-mono mt-1 pr-1.5 select-text">
+                      {dashboardStats.aiSummary}
+                    </p>
+                  </div>
+                )}
               </div>
 
               <button

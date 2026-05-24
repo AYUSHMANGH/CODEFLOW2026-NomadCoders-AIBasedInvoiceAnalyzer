@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
 import { AppLayout } from '../components/AppLayout';
@@ -14,18 +15,29 @@ import {
   AlertCircle,
   Sparkles,
   Check,
-  Trash2
+  Trash2,
+  LogOut
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 
 export const Settings: React.FC = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
+  const navigate = useNavigate();
   const { budgetLimit, updateBudgetLimit, invoices } = useApp();
   const [targetBudget, setTargetBudget] = useState(budgetLimit);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [notifications, setNotifications] = useState(true);
   const [weeklyAlerts, setWeeklyAlerts] = useState(true);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+
+  const handleLogout = async () => {
+    try {
+      await logout();
+      navigate('/login');
+    } catch (e) {
+      console.error('Failed to log out:', e);
+    }
+  };
 
   const handleSaveSettings = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -170,6 +182,39 @@ export const Settings: React.FC = () => {
 
           {/* RIGHT AREA: Backups & Security */}
           <div className="lg:col-span-4 flex flex-col gap-6">
+            {/* User Profile & Account Session Card */}
+            <GlassCard className="border border-glass-border flex flex-col gap-5 !p-6">
+              <div className="flex items-center gap-2 border-b border-[#1E293B] pb-3">
+                <User className="w-4.5 h-4.5 text-cyan" />
+                <h4 className="text-xs font-bold text-white tracking-wide font-mono">Account Session</h4>
+              </div>
+
+              <div className="flex items-center gap-4 text-left">
+                <img
+                  src={user?.photoURL}
+                  alt={user?.displayName}
+                  className="w-14 h-14 rounded-2xl object-cover border-2 border-cyan/40 shadow-[0_0_15px_rgba(34,211,238,0.2)]"
+                />
+                <div className="min-w-0 flex-1">
+                  <h4 className="text-sm font-bold text-white truncate">{user?.displayName}</h4>
+                  <p className="text-[10px] text-slate-400 truncate mt-0.5">{user?.email}</p>
+                  <span className={`inline-block text-[9px] font-mono px-2 py-0.5 rounded-full mt-2 font-bold ${
+                    user?.isGuest ? 'bg-secondary/15 border border-secondary/25 text-[#bdc2ff]' : 'bg-success/15 border border-success/25 text-success'
+                  }`}>
+                    {user?.isGuest ? 'Demo Guest Account' : 'Verified Analyst Account'}
+                  </span>
+                </div>
+              </div>
+
+              <button
+                onClick={handleLogout}
+                className="w-full py-3 bg-gradient-to-r from-rose-500/10 to-rose-600/15 border border-rose-500/30 hover:border-rose-500/60 text-rose-300 hover:text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-rose-950/10 hover:shadow-rose-950/30"
+              >
+                <LogOut className="w-4 h-4" />
+                <span>Sign Out of Session</span>
+              </button>
+            </GlassCard>
+
             {/* Backup export card */}
             <GlassCard className="border border-glass-border flex flex-col gap-5 !p-6">
               <div className="flex items-center gap-2 border-b border-[#1E293B] pb-3">

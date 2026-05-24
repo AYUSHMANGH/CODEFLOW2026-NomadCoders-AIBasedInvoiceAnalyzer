@@ -1026,3 +1026,108 @@ You can ask me questions like:
     suggestedPrompts
   };
 }
+
+/**
+ * Service: Generate a custom AI budget summary
+ */
+export async function generateCustomAIBudgetSummary(invoices: any[], budgetLimit: number): Promise<string> {
+  const totalSpend = invoices.reduce((sum, inv) => sum + (inv.ocrResult?.amount || 0), 0);
+  const percent = budgetLimit > 0 ? (totalSpend / budgetLimit) * 100 : 0;
+  
+  const invoiceDetails = invoices.map(inv => {
+    return `- ${inv.ocrResult?.merchant || 'Unknown Merchant'}: ₹${inv.ocrResult?.amount || 0} (${inv.ocrResult?.category || 'Shopping'}) on ${inv.ocrResult?.date || 'N/A'}`;
+  }).join('\n');
+
+  const prompt = `
+    You are the "Zen AI Analyst", a senior corporate treasurer and budget auditor.
+    Your task is to write a highly tailored, beautiful, 3-4 sentence financial executive summary based on the following real-time data:
+    
+    Monthly Budget Threshold: ₹${budgetLimit}
+    Current Actual Spending: ₹${totalSpend} (${percent.toFixed(1)}% of budget utilized)
+    
+    Here are the transaction logs parsed from uploaded invoices:
+    ${invoiceDetails || "(No invoices uploaded yet)"}
+    
+    Please provide:
+    1. A clear evaluation of whether the budget is tight (close to or exceeding threshold), spending is accurate/under-control, or if they have comfortable runway.
+    2. 1-2 highly specific ideas or warnings on where they are overspending or could optimize costs, referencing the actual categories or merchants from the transaction logs (e.g. if AWS is high, or SaaS tools are costly, or if there's an anomaly).
+    
+    Keep the tone professional, motivating, analytical, and premium. Make sure the output is a single clean paragraph under 100 words. Do not use markdown headers, just clean formatted text.
+  `;
+
+  if (GEMINI_API_KEY) {
+    try {
+      console.log('FinanceLens AI Custom Summary: Generating summary with Google Gemini...');
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      const result = await model.generateContent(prompt);
+      const text = result.response.text();
+      if (text && text.trim().length > 10) {
+        return text.trim();
+      }
+    } catch (e: any) {
+      console.error('Gemini custom summary generation failed:', e.message || e);
+    }
+  }
+
+  if (GROQ_API_KEY) {
+    try {
+      console.log('FinanceLens AI Custom Summary: Generating summary with Groq...');
+      const messages = [{ role: 'user', content: prompt }];
+      const text = await queryGroq(messages, 'llama-3.3-70b-versatile', false);
+      if (text && text.trim().length > 10) {
+        return text.trim();
+      }
+    } catch (e: any) {
+      console.error('Groq custom summary generation failed:', e.message || e);
+    }
+  }
+
+  // High-fidelity fallback
+  console.log('FinanceLens AI Custom Summary: Running high-fidelity local engine fallback...');
+  let summary = '';
+  if (invoices.length === 0) {
+    return `No active invoices detected in the workspace. Upload saas statements, bills, or travel receipts to let Zen AI analyze your budget health. Currently, your spending is ₹0 of your ₹${budgetLimit.toLocaleString()} monthly limit, leaving 100% of your runway intact.`;
+  }
+
+  if (percent > 100) {
+    summary += `🔴 CRITICAL OVERSPEND: Your budget is extremely tight, having consumed ₹${totalSpend.toLocaleString()} which is ${percent.toFixed(0)}% of your ₹${budgetLimit.toLocaleString()} monthly limit. `;
+  } else if (percent > 80) {
+    summary += `⚠️ BUDGET WARNING: Your budget is highly compressed, with utilization sitting at ${percent.toFixed(0)}% (₹${totalSpend.toLocaleString()} spent out of ₹${budgetLimit.toLocaleString()}). `;
+  } else {
+    summary += `🟢 OPTIMIZED SPENDING: Your outlays are running perfectly on track, consuming only ${percent.toFixed(0)}% of your ₹${budgetLimit.toLocaleString()} monthly allowance. `;
+  }
+
+  // Find top categories to give specific ideas
+  const catGroup: { [key: string]: number } = {};
+  invoices.forEach(inv => {
+    const cat = inv.ocrResult?.category || 'Shopping';
+    catGroup[cat] = (catGroup[cat] || 0) + (inv.ocrResult?.amount || 0);
+  });
+  const sortedCats = Object.entries(catGroup).sort((a, b) => b[1] - a[1]);
+
+  if (sortedCats.length > 0) {
+    const [topCat, topAmt] = sortedCats[0];
+    const topPct = (topAmt / totalSpend) * 100;
+    summary += `We detected a heavy concentration in ${topCat} representing ₹${topAmt.toLocaleString()} (${topPct.toFixed(0)}% of your spend). `;
+    
+    if (topCat === 'Subscriptions' || topCat === 'Software') {
+      summary += `Actionable optimization: Consolidate active SaaS licenses or negotiate annual pricing to immediately save up to 15%. `;
+    } else if (topCat === 'Travel') {
+      summary += `Actionable optimization: Restrict late-notice flight bookings and set pre-approval guidelines for employee rideshares. `;
+    } else if (topCat === 'Utilities') {
+      summary += `Actionable optimization: Audit cloud servers (like S3/EC2) and shut down idle developer machines after 6 PM. `;
+    } else {
+      summary += `Actionable optimization: Review recent high-value items in ${topCat} to prune non-essential procurement. `;
+    }
+  }
+
+  const anomalies = invoices.filter(inv => inv.ocrResult?.anomalyDetected);
+  if (anomalies.length > 0) {
+    summary += `Additionally, you have ${anomalies.length} anomalous transactions (e.g. at ${anomalies[0].ocrResult?.merchant || 'Merchant'}) which represent active leakage.`;
+  } else {
+    summary += `All parsed invoices comply perfectly with standard compliance metrics, keeping your risk index highly optimized.`;
+  }
+
+  return summary;
+}

@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import * as fs from 'fs';
 import * as path from 'path';
-import { extractInvoiceData, generateInsightsFromInvoices, getAdvisorChatResponse } from '../services/aiService';
+import { extractInvoiceData, generateInsightsFromInvoices, getAdvisorChatResponse, generateCustomAIBudgetSummary } from '../services/aiService';
 
 // ─── Email Alert Helper ────────────────────────────────────────────────────────
 // Uses nodemailer with Ethereal (test) credentials when SMTP_USER/PASS not set,
@@ -467,13 +467,15 @@ export const getInsightsStats = async (req: Request, res: Response) => {
 
 export const triggerCustomSummary = async (req: Request, res: Response) => {
   const completedInvoices = localInvoiceDB.filter(item => item.status === 'completed');
-  const insights = generateInsightsFromInvoices(completedInvoices, budgetLimit);
+  
+  // Call the new service function to generate a rich budget analysis
+  const aiSummary = await generateCustomAIBudgetSummary(completedInvoices, budgetLimit);
   
   // Simulate heavy AI processing shimmer
   await new Promise(resolve => setTimeout(resolve, 1500));
   
   return res.status(200).json({
-    aiSummary: `AI WORKSPACE UPDATE: Audited Q3 expenditure shows a major concentration in Cloud/Utilities ($${(insights.savingsOpportunity * 5).toFixed(2)}) and duplicate risks in Travel. Actionable recommendation items have been updated in your Insights check board.`
+    aiSummary
   });
 };
 
