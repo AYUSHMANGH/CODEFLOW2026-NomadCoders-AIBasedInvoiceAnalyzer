@@ -6,9 +6,11 @@ import { Navigate } from 'react-router-dom';
 
 interface AppLayoutProps {
   children: React.ReactNode;
+  /** Lock main area height so only inner panels scroll (e.g. AI Advisor chat) */
+  lockScroll?: boolean;
 }
 
-export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
+export const AppLayout: React.FC<AppLayoutProps> = ({ children, lockScroll }) => {
   const { user, loading } = useAuth();
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
 
@@ -33,12 +35,16 @@ export const AppLayout: React.FC<AppLayoutProps> = ({ children }) => {
       <Sidebar isOpen={mobileSidebarOpen} onClose={() => setMobileSidebarOpen(false)} />
 
       {/* Main scrolling content area */}
-      <div className="flex-1 flex flex-col min-w-0 overflow-x-hidden">
+      <div className="flex-1 flex flex-col min-w-0 min-h-0 overflow-hidden h-[100dvh]">
         {/* Top Header bar */}
         <Header onMenuClick={() => setMobileSidebarOpen(true)} />
 
         {/* Dynamic page contents */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-y-auto">
+        <main
+          className={`flex-1 min-h-0 ${
+            lockScroll ? 'p-3 sm:p-4 overflow-hidden flex flex-col' : 'p-4 sm:p-6 lg:p-8 overflow-y-auto'
+          }`}
+        >
           {children}
         </main>
       </div>

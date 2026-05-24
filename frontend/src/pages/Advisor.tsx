@@ -14,7 +14,6 @@ import {
   Lock,
   Clock,
   LineChart,
-  Bell,
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import confetti from 'canvas-confetti';
@@ -192,7 +191,7 @@ export const Advisor: React.FC = () => {
   const [reductionPct, setReductionPct] = useState(10);
   const [projectedCash, setProjectedCash] = useState(252170);
 
-  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const totalSpend =
@@ -207,7 +206,9 @@ export const Advisor: React.FC = () => {
   }, [savingsPct, reductionPct, budgetLimit, invoices]);
 
   useEffect(() => {
-    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
+    const container = messagesContainerRef.current;
+    if (!container) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
   }, [messages, loading]);
 
   const handleSendMessage = async (textToSend: string) => {
@@ -266,10 +267,10 @@ export const Advisor: React.FC = () => {
   const getPromptIcon = (text: string) => {
     const t = text.toLowerCase();
     if (t.includes('compare') || t.includes('rate') || t.includes('yes'))
-      return <LineChart className="w-3.5 h-3.5 text-cyan shrink-0" />;
+      return <LineChart className="w-4 h-4 text-cyan shrink-0" strokeWidth={2} />;
     if (t.includes('audit') || t.includes('sub') || t.includes('recurring'))
-      return <Target className="w-3.5 h-3.5 text-[#c084fc] shrink-0" />;
-    return <Clock className="w-3.5 h-3.5 text-primary shrink-0" />;
+      return <Target className="w-4 h-4 text-[#c084fc] shrink-0" strokeWidth={2} />;
+    return <Clock className="w-4 h-4 text-primary shrink-0" strokeWidth={2} />;
   };
 
   const cyanTrackStyle = {
@@ -281,83 +282,70 @@ export const Advisor: React.FC = () => {
   };
 
   return (
-    <AppLayout>
-      <div className="advisor-page-bg -m-4 sm:-m-6 lg:-m-8 p-4 sm:p-6 lg:p-8 min-h-[calc(100vh-5rem)] flex flex-col gap-6 text-left select-none">
-        {/* Header */}
-        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-          <div>
-            <h1 className="text-3xl sm:text-4xl font-geist font-bold text-white tracking-tight">
-              Zen{' '}
-              <span className="bg-gradient-to-r from-[#3b82f6] via-[#5B8CFF] to-[#a855f7] bg-clip-text text-transparent">
-                AI Advisor
-              </span>
-            </h1>
-            <p className="text-sm text-slate-400 mt-1">
-              Direct corporate financial counseling session.
-            </p>
-          </div>
+    <AppLayout lockScroll>
+      <div className="advisor-page-bg relative flex flex-col h-full min-h-0 overflow-hidden gap-3 sm:gap-4 text-left select-none">
+        <div className="advisor-glow-orb advisor-glow-orb--tl" aria-hidden />
+        <div className="advisor-glow-orb advisor-glow-orb--br" aria-hidden />
+        <div className="advisor-glow-orb advisor-glow-orb--chat" aria-hidden />
 
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              className="px-4 py-2 rounded-full bg-transparent border border-slate-600 hover:border-slate-400 text-sm font-medium text-slate-200 flex items-center gap-2 transition-colors cursor-pointer"
-            >
-              <LineChart className="w-4 h-4" />
-              Session Insights
-            </button>
-            <button
-              type="button"
-              className="relative p-2.5 rounded-xl border border-slate-600/80 bg-[#050a14]/80 text-slate-300 hover:text-white transition-colors cursor-pointer"
-              aria-label="Notifications"
-            >
-              <Bell className="w-5 h-5" />
-              <span className="absolute -top-1 -right-1 min-w-[18px] h-[18px] px-1 bg-[#a855f7] text-white text-[10px] font-bold rounded-full flex items-center justify-center">
-                2
-              </span>
-            </button>
-          </div>
+        <div className="relative z-10 flex flex-col h-full min-h-0 overflow-hidden gap-3 sm:gap-4">
+        {/* Header — compact so chat gets more height */}
+        <div className="shrink-0">
+          <h1 className="text-2xl sm:text-3xl font-geist font-bold text-white tracking-tight">
+            Zen{' '}
+            <span className="bg-gradient-to-r from-[#3b82f6] via-[#5B8CFF] to-[#a855f7] bg-clip-text text-transparent">
+              AI Advisor
+            </span>
+          </h1>
+          <p className="text-xs sm:text-sm text-slate-400 mt-0.5">
+            Direct corporate financial counseling session.
+          </p>
         </div>
 
-        {/* Main grid */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 flex-1 items-stretch">
+        {/* Main grid — chat ~72% width on desktop */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 flex-1 min-h-0 overflow-hidden">
           {/* Chat column */}
-          <div className="lg:col-span-7 xl:col-span-8 group flex flex-col advisor-panel p-5 sm:p-6 min-h-[560px] lg:min-h-[620px] relative overflow-hidden">
+          <div className="lg:col-span-9 group flex flex-col advisor-panel min-h-0 h-full max-h-full max-lg:min-h-[58vh] max-lg:flex-1 relative overflow-hidden">
+            <div className="relative z-[1] flex flex-col flex-1 min-h-0 h-full overflow-hidden p-4 sm:p-5">
             {loading && (
               <div className="absolute top-0 left-0 w-full h-0.5 glass-shimmer z-20" />
             )}
 
             {/* Analyst header */}
-            <div className="flex justify-between items-center gap-3 pb-4 border-b border-slate-700/60 mb-4 z-10">
-              <div className="flex items-center gap-3">
-                <div className="relative w-11 h-11 rounded-xl bg-gradient-to-br from-[#7c5cfc] to-[#3b82f6] flex items-center justify-center shadow-lg shadow-[#7c5cfc]/25">
-                  <Sparkles className="w-5 h-5 text-white" />
-                  <span className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-[#1ED760] rounded-full border-2 border-[#050a14]" />
+            <div className="shrink-0 flex justify-between items-center gap-3 pb-3 border-b border-slate-700/60 z-10">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="relative w-12 h-12 shrink-0 rounded-xl bg-gradient-to-br from-[#7c5cfc] to-[#3b82f6] flex items-center justify-center shadow-lg shadow-[#7c5cfc]/25">
+                  <Sparkles className="w-6 h-6 text-white" strokeWidth={2} />
+                  <span className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 bg-[#1ED760] rounded-full border-2 border-[#050a14]" />
                 </div>
-                <div>
-                  <h2 className="text-sm font-bold text-white">Zen AI Analyst</h2>
-                  <p className="text-xs mt-0.5">
+                <div className="min-w-0">
+                  <h2 className="text-sm sm:text-base font-bold text-white">Zen AI Analyst</h2>
+                  <p className="text-xs mt-0.5 truncate">
                     <span className="text-[#1ED760] font-medium">Active</span>
                     <span className="text-slate-400"> • Processing transactions</span>
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-2 shrink-0">
                 <button
                   type="button"
                   onClick={handleClearHistory}
                   title="Clear chat"
-                  className="p-2 text-slate-500 hover:text-slate-300 rounded-lg transition-colors cursor-pointer lg:opacity-0 lg:group-hover:opacity-100"
+                  className="p-2.5 text-slate-300 hover:text-white hover:bg-white/5 border border-slate-600/50 rounded-lg transition-colors cursor-pointer"
                 >
-                  <Trash2 className="w-3.5 h-3.5" />
+                  <Trash2 className="w-4 h-4" strokeWidth={2} />
                 </button>
-                <span className="text-[11px] border border-[#3b82f6]/50 text-cyan/90 px-3 py-1.5 rounded-full font-medium whitespace-nowrap">
+                <span className="hidden sm:inline text-xs border border-[#3b82f6]/50 text-cyan px-3 py-1.5 rounded-full font-medium whitespace-nowrap">
                   Audit Consultation Thread
                 </span>
               </div>
             </div>
 
-            {/* Messages */}
-            <div className="flex-1 overflow-y-auto flex flex-col gap-4 pr-1 mb-4 z-10 scrollbar-thin">
+            {/* Messages — only this region scrolls */}
+            <div
+              ref={messagesContainerRef}
+              className="advisor-messages-scroll flex-1 min-h-0 flex flex-col gap-4 pr-1 py-3 z-10"
+            >
               <AnimatePresence initial={false}>
                 {messages.map((m, idx) => (
                   <motion.div
@@ -376,7 +364,7 @@ export const Advisor: React.FC = () => {
                           <span className="text-[11px] text-slate-500 font-mono">
                             10:42 AM
                           </span>
-                          <Sparkles className="w-4 h-4 text-[#a855f7]/70" />
+                          <Sparkles className="w-5 h-5 text-[#a855f7]" strokeWidth={2} />
                         </div>
                       </div>
                     ) : (
@@ -410,11 +398,10 @@ export const Advisor: React.FC = () => {
                   </span>
                 </motion.div>
               )}
-              <div ref={messagesEndRef} />
             </div>
 
             {/* Prompts + input */}
-            <div className="flex flex-col gap-3 z-10 mt-auto">
+            <div className="shrink-0 flex flex-col gap-3 z-10 pt-2 border-t border-slate-700/40">
               {suggestedPrompts.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {suggestedPrompts.map((p, index) => (
@@ -422,7 +409,7 @@ export const Advisor: React.FC = () => {
                       key={index}
                       type="button"
                       onClick={() => handleSendMessage(p)}
-                      className="px-4 py-2 rounded-full bg-[#050a14]/90 border border-slate-700 hover:border-cyan/50 text-xs font-semibold text-slate-200 hover:text-white flex items-center gap-2 transition-all cursor-pointer"
+                      className="advisor-glass-pill px-4 py-2.5 rounded-full hover:border-cyan/50 text-xs sm:text-sm font-semibold text-slate-200 hover:text-white flex items-center gap-2.5 transition-all cursor-pointer"
                     >
                       {getPromptIcon(p)}
                       {p}
@@ -443,29 +430,30 @@ export const Advisor: React.FC = () => {
                   placeholder="Ask Zen AI anything about your corporate finances..."
                   value={inputMsg}
                   onChange={(e) => setInputMsg(e.target.value)}
-                  className="w-full pl-4 pr-14 py-3.5 rounded-xl bg-[#050a14]/90 border border-[#3b82f6]/40 text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan/60 focus:ring-1 focus:ring-cyan/25 transition-all"
+                  className="advisor-glass-input w-full pl-4 pr-16 py-3.5 rounded-xl text-sm text-white placeholder-slate-500 focus:outline-none focus:border-cyan/70 focus:ring-1 focus:ring-cyan/30 focus:shadow-[0_0_24px_rgba(34,211,238,0.2)] transition-all"
                 />
                 <button
                   type="submit"
                   title="Send message"
-                  className="absolute right-2 top-1/2 -translate-y-1/2 p-2.5 rounded-lg bg-gradient-to-r from-[#3b82f6] to-[#a855f7] text-white hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-[#3b82f6]/25"
+                  className="absolute right-2 top-1/2 -translate-y-1/2 p-3 rounded-lg bg-gradient-to-r from-[#3b82f6] to-[#a855f7] text-white hover:brightness-110 transition-all cursor-pointer shadow-lg shadow-[#3b82f6]/25"
                 >
-                  <Send className="w-4 h-4" />
+                  <Send className="w-5 h-5" strokeWidth={2} />
                 </button>
               </form>
             </div>
+            </div>
           </div>
 
-          {/* Sidebar */}
-          <div className="lg:col-span-5 xl:col-span-4 flex flex-col gap-5">
+          {/* Sidebar — narrower to give chat more room */}
+          <div className="lg:col-span-3 flex flex-col gap-3 min-h-0 overflow-y-auto lg:overflow-hidden lg:max-w-[320px] lg:justify-self-end w-full">
             {/* Scenario simulator */}
-            <div className="advisor-card p-5 flex flex-col">
-              <div className="flex items-center gap-2 mb-6">
-                <Sparkles className="w-4 h-4 text-[#a855f7]" />
-                <h3 className="text-sm font-bold text-white">Scenario Simulator</h3>
+            <div className="advisor-card p-4 flex flex-col shrink-0">
+              <div className="flex items-center gap-2 mb-4">
+                <Sparkles className="w-4 h-4 text-[#a855f7] shrink-0" strokeWidth={2} />
+                <h3 className="text-xs font-bold text-white">Scenario Simulator</h3>
               </div>
 
-              <div className="flex flex-col gap-7">
+              <div className="flex flex-col gap-5">
                 <div>
                   <div className="flex justify-between items-center text-sm mb-3">
                     <span className="text-slate-400">Monthly Savings Increase</span>
@@ -503,19 +491,19 @@ export const Advisor: React.FC = () => {
             </div>
 
             {/* Projected result */}
-            <div className="advisor-card p-5 flex flex-col gap-5 flex-1">
+            <div className="advisor-card p-4 flex flex-col gap-4 shrink-0">
               <div>
-                <p className="text-[10px] font-mono text-slate-500 uppercase tracking-widest font-semibold">
+                <p className="text-[9px] font-mono text-slate-500 uppercase tracking-widest font-semibold">
                   Projected 12-Month Result
                 </p>
 
-                <div className="mt-3 flex flex-wrap items-baseline gap-x-3 gap-y-2">
+                <div className="mt-2 flex flex-col gap-1.5">
                   <AnimatePresence mode="popLayout">
                     <motion.span
                       key={projectedCash}
                       initial={{ opacity: 0.7, y: 4 }}
                       animate={{ opacity: 1, y: 0 }}
-                      className="text-3xl sm:text-4xl font-bold text-white tracking-tight"
+                      className="text-2xl font-bold text-white tracking-tight leading-tight"
                     >
                       +₹{formatInr(projectedCash)}
                     </motion.span>
@@ -526,9 +514,8 @@ export const Advisor: React.FC = () => {
                   </span>
                 </div>
 
-                <p className="text-xs text-slate-400 leading-relaxed mt-4">
-                  This projected trajectory enables hiring 1 new associate or moving
-                  into a larger office space by Q4.
+                <p className="text-[11px] text-slate-400 leading-relaxed">
+                  Enables hiring 1 associate or larger office by Q4.
                 </p>
               </div>
 
@@ -540,25 +527,25 @@ export const Advisor: React.FC = () => {
                     `Simulation implemented. Parameters synchronized (Savings: +${savingsPct}%, Reduction: ${reductionPct}%).`
                   );
                 }}
-                className="w-full py-3.5 px-4 rounded-full bg-gradient-to-r from-[#3b82f6] to-[#a855f7] hover:brightness-110 text-white text-sm font-bold flex items-center justify-center gap-2 transition-all cursor-pointer shadow-lg shadow-[#3b82f6]/20 border border-white/10"
+                className="w-full py-3 px-3 rounded-full bg-gradient-to-r from-[#3b82f6] to-[#a855f7] hover:brightness-110 text-white text-xs font-bold flex items-center justify-center gap-1.5 transition-all cursor-pointer shadow-lg shadow-[#3b82f6]/20 border border-white/10"
               >
-                <Rocket className="w-4 h-4 shrink-0" />
-                <span>Implement This Strategy</span>
-                <ChevronRight className="w-4 h-4 ml-1 shrink-0" />
+                <Rocket className="w-4 h-4 shrink-0" strokeWidth={2} />
+                <span className="truncate">Implement Strategy</span>
+                <ChevronRight className="w-4 h-4 shrink-0" strokeWidth={2} />
               </button>
             </div>
           </div>
         </div>
 
-        {/* Trust footer — single row with dividers like mockup */}
-        <div className="pt-6 border-t border-slate-700/50">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-0 lg:divide-x lg:divide-slate-700/60">
+        {/* Trust footer — compact */}
+        <div className="shrink-0 pt-3 border-t border-slate-700/50">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-0 lg:divide-x lg:divide-slate-700/60">
             {TRUST_ITEMS.map(({ icon: Icon, title, subtitle }) => (
               <div
                 key={title}
-                className="flex items-center gap-3 lg:px-6 first:lg:pl-0 last:lg:pr-0"
+                className="flex items-center gap-2.5 lg:px-5 first:lg:pl-0 last:lg:pr-0"
               >
-                <Icon className="w-5 h-5 text-[#3b82f6] shrink-0" strokeWidth={1.75} />
+                <Icon className="w-5 h-5 text-cyan shrink-0" strokeWidth={2} />
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-white">{title}</p>
                   <p className="text-[11px] text-slate-500 mt-0.5">{subtitle}</p>
@@ -566,6 +553,7 @@ export const Advisor: React.FC = () => {
               </div>
             ))}
           </div>
+        </div>
         </div>
       </div>
     </AppLayout>
