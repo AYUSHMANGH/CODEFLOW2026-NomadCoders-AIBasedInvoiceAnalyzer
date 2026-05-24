@@ -4,6 +4,7 @@ import * as dotenv from 'dotenv';
 dotenv.config();
 
 import { GoogleGenerativeAI } from '@google/generative-ai';
+import { createWorker } from 'tesseract.js';
 const pdf: any = require('pdf-parse');
 
 // API Key Configurations
@@ -90,6 +91,24 @@ async function performOcrSpace(fileBuffer: Buffer, fileName: string, fileType: s
   } catch (err: any) {
     console.error("OCR.space API failed:", err.message || err);
     throw err;
+  }
+}
+
+/**
+ * Helper: Perform local OCR using Tesseract.js (failsafe offline backup)
+ */
+async function performLocalTesseractOcr(fileBuffer: Buffer): Promise<string> {
+  console.log('Tesseract.js Local OCR: Initializing worker...');
+  const worker = await createWorker('eng');
+  try {
+    const { data: { text } } = await worker.recognize(fileBuffer);
+    console.log(`Tesseract.js Local OCR: Scan complete. Extracted ${text.length} characters.`);
+    return text;
+  } catch (err: any) {
+    console.error("Tesseract.js Local OCR failed:", err.message || err);
+    throw err;
+  } finally {
+    await worker.terminate();
   }
 }
 
@@ -542,6 +561,16 @@ export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, 
         extractedText = await performOcrSpace(fileBuffer, fileName, ocrType);
       } catch (err: any) {
         console.error("OCR.space API parsing failed:", err.message || err);
+      }
+    }
+
+    // Failsafe: If OCR.space failed or returned empty text, fall back to offline Tesseract.js local OCR!
+    if (!extractedText || extractedText.trim().length < 50) {
+      try {
+        console.log('FinanceLens OCR: Falling back to local Tesseract.js offline OCR...');
+        extractedText = await performLocalTesseractOcr(fileBuffer);
+      } catch (err: any) {
+        console.error("Tesseract.js local fallback OCR failed:", err.message || err);
       }
     }
   }
