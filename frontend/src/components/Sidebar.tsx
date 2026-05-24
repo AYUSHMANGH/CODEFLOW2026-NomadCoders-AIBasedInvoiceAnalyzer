@@ -36,7 +36,7 @@ export const Sidebar: React.FC<SidebarProps> = ({ isOpen, onClose }) => {
     { name: 'Upload', path: '/upload', icon: UploadCloud },
     { name: 'Expenses', path: '/expenses', icon: Receipt },
     { name: 'Analytics', path: '/analytics', icon: BarChart3 },
-    { name: 'AI Insights', path: '/insights', icon: Sparkles },
+    { name: 'Audit Insights', path: '/insights', icon: Sparkles },
     { name: 'AI Advisor', path: '/advisor', icon: MessagesSquare },
   ];
 
