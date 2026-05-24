@@ -1,4 +1,5 @@
 import React from 'react';
+import financelensLogo from '../assets/financelens-logo.svg';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
@@ -37,16 +38,12 @@ export const Sidebar: React.FC = () => {
     <aside className="w-64 min-h-screen bg-[#051424] border-r border-[#1E293B] flex flex-col justify-between p-6 shrink-0 z-20">
       <div className="flex flex-col gap-8">
         {/* App Logo & Header */}
-        <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20">
-            <span className="font-geist font-black text-xl text-white">F</span>
-          </div>
-          <div>
-            <h1 className="font-geist font-extrabold text-lg text-white leading-none tracking-wide">
-              FINANCE<span className="text-cyan">LENS</span>
-            </h1>
-            <p className="text-[10px] text-soft-grey font-mono text-cyan/70 mt-1">AI ANALYTICS</p>
-          </div>
+        <div className="flex items-center justify-center">
+          <img
+            src={financelensLogo}
+            alt="FinanceLens Logo"
+            className="w-28 h-28 object-contain drop-shadow-[0_0_12px_rgba(0,229,255,0.5)]"
+          />
         </div>
 
         {/* User Card */}

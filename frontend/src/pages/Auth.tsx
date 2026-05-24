@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { GlassCard } from '../components/GlassCard';
 import { Mail, Lock, User, Key, AlertCircle, ArrowRight, ShieldCheck } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import financelensLogo from '../assets/financelens-logo.svg';
 
 export const Auth: React.FC = () => {
   const { loginWithEmail, signupWithEmail, loginWithGoogle, loginAsGuest } = useAuth();
@@ -64,12 +65,11 @@ export const Auth: React.FC = () => {
       <div className="w-full max-w-md z-10">
         {/* Title logo */}
         <div className="text-center mb-8">
-          <div className="w-14 h-14 rounded-2xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center mx-auto shadow-xl shadow-primary/20 mb-4 animate-bounce">
-            <span className="font-geist font-black text-2xl text-white">FL</span>
-          </div>
-          <h2 className="font-geist font-extrabold text-2xl text-white tracking-wide">
-            FINANCE<span className="text-cyan">LENS</span> AI
-          </h2>
+          <img
+            src={financelensLogo}
+            alt="FinanceLens Logo"
+            className="w-32 h-32 object-contain mx-auto drop-shadow-[0_0_16px_rgba(0,229,255,0.55)] animate-bounce"
+          />
           <p className="text-slate-400 text-xs mt-1.5 font-mono">Turn invoices into financial intelligence.</p>
         </div>
 

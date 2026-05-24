@@ -17,6 +17,7 @@ import {
   Fingerprint
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import financelensLogo from '../assets/financelens-logo.svg';
 
 export const Landing: React.FC = () => {
   const navigate = useNavigate();
@@ -75,13 +76,18 @@ export const Landing: React.FC = () => {
 
       {/* Modern Header Navigation */}
       <header className="h-20 max-w-7xl mx-auto px-6 flex items-center justify-between border-b border-glass-border relative z-30">
-        <div className="flex items-center gap-3">
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-tr from-primary to-secondary flex items-center justify-center shadow-lg shadow-primary/20">
-            <span className="font-geist font-black text-lg text-white">F</span>
+        <div className="flex items-center gap-2.5">
+          <img
+            src={financelensLogo}
+            alt="FinanceLens Logo"
+            className="w-9 h-9 object-contain drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]"
+          />
+          <div className="flex flex-col leading-none">
+            <span className="font-geist font-extrabold text-sm text-white tracking-wide">
+              FINANCE<span className="text-cyan">LENS</span>
+            </span>
+            <span className="text-[9px] font-mono text-slate-400 tracking-wider mt-0.5">AI Invoice Analyzer</span>
           </div>
-          <span className="font-geist font-extrabold text-md text-white tracking-wide">
-            FINANCE<span className="text-cyan">LENS</span>
-          </span>
         </div>
 
         <nav className="hidden md:flex items-center gap-8 text-xs font-semibold text-slate-400">
@@ -377,9 +383,11 @@ export const Landing: React.FC = () => {
       <footer className="border-t border-[#1E293B] bg-[#051424] py-10 relative z-20">
         <div className="max-w-7xl mx-auto px-6 flex flex-col sm:flex-row justify-between items-center gap-6">
           <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-gradient-to-tr from-primary to-secondary flex items-center justify-center">
-              <span className="font-geist font-black text-sm text-white">F</span>
-            </div>
+            <img
+              src={financelensLogo}
+              alt="FinanceLens Logo"
+              className="w-8 h-8 object-contain drop-shadow-[0_0_6px_rgba(0,229,255,0.5)]"
+            />
             <span className="font-geist font-extrabold text-xs text-white">
               © {new Date().getFullYear()} FinanceLens AI. Precision Intelligence for Finance.
             </span>

@@ -4,7 +4,7 @@
 
 **FinanceLens AI** is a production-grade, AI-powered FinTech web application designed to automate corporate audits and receipt auditing. Users can upload invoices, bills, or receipts (PDF, JPG, PNG) and instantly extract itemized line items, categorize expenditures, track budget health scores, view interactive visual charts, and consult an embedded AI financial analyst.
 
-The project is structured as a robust full-stack monorepo featuring a **Node.js + Express API** backend and a **Vite + React + TypeScript** client, styled with a state-of-the-art **Tailwind CSS v4** glassmorphic interface.
+The project is structured as a robust full-stack monorepo featuring a **Node.js + Express API** backend and a **Vite + React + TypeScript** client, styled with a state-of-the-art **Tailwind CSS v4** glassmorphic interface.🔥
 
 ---
 

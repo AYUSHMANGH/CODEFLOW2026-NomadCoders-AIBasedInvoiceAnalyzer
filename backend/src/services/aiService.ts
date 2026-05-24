@@ -1,10 +1,14 @@
 import * as fs from 'fs';
 import * as path from 'path';
-import Tesseract from 'tesseract.js';
+import * as dotenv from 'dotenv';
+dotenv.config();
+
+import { GoogleGenerativeAI } from '@google/generative-ai';
 const pdf: any = require('pdf-parse');
 
-// Check for Groq API key
+// API Key Configurations
 const GROQ_API_KEY = process.env.GROQ_API_KEY || '';
+const GEMINI_API_KEY = process.env.GEMINI_API_KEY || process.env.GOOGLE_API_KEY || '';
 
 export interface ExtractedInvoice {
   isValidInvoice: boolean;
@@ -22,6 +26,7 @@ export interface ExtractedInvoice {
   anomalyDescription?: string;
   isSubscription: boolean;
   analysis?: string;
+  extractedText?: string;
 }
 
 export interface AIAdvisorResponse {
@@ -42,6 +47,154 @@ const CATEGORIES = [
   'Subscriptions',
   'Education'
 ];
+
+/**
+ * Helper: Perform OCR using OCR.space API with the user's API key
+ */
+async function performOcrSpace(fileBuffer: Buffer, fileName: string, fileType: string): Promise<string> {
+  const apikey = 'K82990749088957';
+  const url = 'https://api.ocr.space/parse/image';
+  
+  console.log(`OCR.space API: Initiating scan for file "${fileName}"...`);
+  
+  try {
+    const formData = new FormData();
+    formData.append('apikey', apikey);
+    formData.append('language', 'eng');
+    formData.append('isOverlayRequired', 'false');
+    formData.append('detectOrientation', 'true');
+    formData.append('scale', 'true');
+    formData.append('isTable', 'true');
+    
+    const blob = new Blob([new Uint8Array(fileBuffer)], { type: fileType });
+    formData.append('file', blob, fileName);
+
+    const response = await fetch(url, {
+      method: 'POST',
+      body: formData
+    });
+
+    if (!response.ok) {
+      throw new Error(`OCR.space API responded with status ${response.status}`);
+    }
+
+    const data: any = await response.json();
+    if (data.IsErroredOnProcessing) {
+      throw new Error(`OCR.space processing error: ${data.ErrorMessage || JSON.stringify(data.ErrorDetails)}`);
+    }
+
+    const text = data.ParsedResults?.map((r: any) => r.ParsedText).join('\n') || '';
+    console.log(`OCR.space API: Scan complete. Extracted ${text.length} characters.`);
+    return text;
+  } catch (err: any) {
+    console.error("OCR.space API failed:", err.message || err);
+    throw err;
+  }
+}
+
+/**
+ * Helper: Extract text between outer '{' and '}' and strip markdown wrappers
+ */
+function cleanJsonString(str: string): string {
+  let cleaned = str.trim();
+  
+  // Strip markdown code block markers
+  if (cleaned.includes('```')) {
+    const match = cleaned.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
+    if (match && match[1]) {
+      cleaned = match[1].trim();
+    }
+  }
+  
+  // Extract text between first '{' and last '}'
+  const start = cleaned.indexOf('{');
+  const end = cleaned.lastIndexOf('}');
+  if (start !== -1 && end !== -1 && end > start) {
+    cleaned = cleaned.substring(start, end + 1);
+  }
+  
+  return cleaned;
+}
+
+/**
+ * Robust field sanitization and type casting for ExtractedInvoice payload
+ */
+function sanitizeExtractedInvoice(raw: any, fileName: string): ExtractedInvoice {
+  const isValidInvoice = typeof raw.isValidInvoice === 'boolean' ? raw.isValidInvoice : 
+                         (typeof raw.isValidInvoice === 'string' ? raw.isValidInvoice.toLowerCase() === 'true' : true);
+
+  const validationError = raw.validationError || undefined;
+
+  let amount = parseFloat(raw.amount);
+  if (isNaN(amount)) amount = 0;
+
+  let tax = parseFloat(raw.tax);
+  if (isNaN(tax)) tax = 0;
+
+  let confidence = parseFloat(raw.confidence);
+  if (isNaN(confidence)) confidence = 95.0;
+
+  let category = raw.category || 'Shopping';
+  if (!CATEGORIES.includes(category)) {
+    const matched = CATEGORIES.find(c => c.toLowerCase() === category.toLowerCase());
+    category = matched || 'Shopping';
+  }
+
+  // Validate and format Date
+  let dateStr = raw.date;
+  if (!dateStr || isNaN(new Date(dateStr).getTime())) {
+    dateStr = new Date().toISOString().split('T')[0]; // fallback to today
+  } else {
+    try {
+      const d = new Date(dateStr);
+      dateStr = d.toISOString().split('T')[0];
+    } catch {
+      dateStr = new Date().toISOString().split('T')[0];
+    }
+  }
+
+  // Validate items list
+  let items: any[] = [];
+  if (Array.isArray(raw.items)) {
+    items = raw.items.map((item: any) => {
+      let qty = parseInt(item.quantity);
+      if (isNaN(qty)) qty = 1;
+      let price = parseFloat(item.price);
+      if (isNaN(price)) price = 0;
+      let total = parseFloat(item.total);
+      if (isNaN(total)) total = qty * price;
+      return {
+        name: item.name || 'Line Item',
+        quantity: qty,
+        price: parseFloat(price.toFixed(2)),
+        total: parseFloat(total.toFixed(2))
+      };
+    });
+  }
+
+  if (amount === 0 && items.length > 0) {
+    amount = items.reduce((sum, item) => sum + item.total, 0);
+  }
+
+  return {
+    isValidInvoice,
+    validationError,
+    merchant: raw.merchant || 'General Merchant',
+    date: dateStr,
+    invoiceNumber: raw.invoiceNumber || `INV-2026-${100000 + Math.round(Math.random() * 899999)}`,
+    amount: parseFloat(amount.toFixed(2)),
+    currency: raw.currency || 'INR',
+    tax: parseFloat(tax.toFixed(2)),
+    confidence: parseFloat(confidence.toFixed(1)),
+    category,
+    items,
+    anomalyDetected: typeof raw.anomalyDetected === 'boolean' ? raw.anomalyDetected : false,
+    anomalyDescription: raw.anomalyDescription || undefined,
+    isSubscription: typeof raw.isSubscription === 'boolean' ? raw.isSubscription : false,
+    extractedText: raw.extractedText || undefined
+  };
+}
+
 
 /**
  * Helper: Query Groq API
@@ -330,108 +483,131 @@ function generateHighFidelityMockInvoice(fileName: string, fileBuffer?: Buffer):
  * Service: Extract data from file (OCR + key-value extraction using Groq API)
  */
 export async function extractInvoiceData(fileName: string, fileBuffer?: Buffer, fileType?: string): Promise<ExtractedInvoice> {
-  if (GROQ_API_KEY) {
-    try {
-      const prompt = `
-        You are a highly advanced FinTech OCR and financial audit intelligence agent.
-        Your task is to extract exact billing information from this invoice/receipt document.
-        
-        FIRST, evaluate whether the document is a valid financial record (e.g., an invoice, bill, receipt, purchase order, credit invoice, or SaaS transaction statement).
-        If it is a generic photo, textbook, code file, text note, or completely unrelated document/image, you MUST set "isValidInvoice" to false, and explain what is expected in "validationError".
-        
-        Analyze the text or image contents and extract the following JSON schema:
+  const prompt = `
+    You are a highly advanced FinTech OCR and financial audit intelligence agent.
+    Your task is to extract exact billing information from the provided document text.
+    
+    FIRST, evaluate whether the document text contains a valid financial record (e.g., an invoice, bill, receipt, purchase order, credit invoice, or SaaS transaction statement).
+    If it is a generic photo, textbook, code file, text note, or completely unrelated document/image, you MUST set "isValidInvoice" to false, and explain what is expected in "validationError".
+    
+    Analyze the text contents and extract the following JSON schema:
+    {
+      "isValidInvoice": boolean (set true if it is a valid receipt, bill, or invoice showing commercial exchange; set false otherwise),
+      "validationError": "A friendly, professional, actionable error message explaining why the document is not an invoice and what the requisites are (e.g. 'The uploaded document appears to be a generic photo of a landscape. FinanceLens AI requires a clearly legible receipt, bill, or SaaS statement displaying a merchant name, billing date, and transaction totals.') if isValidInvoice is false; otherwise null",
+      "merchant": "Exact Name of the business/merchant (empty if isValidInvoice is false)",
+      "date": "YYYY-MM-DD format (if only year/month is clear, approximate or extract as is, empty if isValidInvoice is false)",
+      "invoiceNumber": "The invoice or receipt number (empty if isValidInvoice is false)",
+      "amount": number (Total invoice value, float, 0 if isValidInvoice is false),
+      "currency": "3-letter currency code, default INR",
+      "tax": number (Total tax amount, float. If none, extract 0, 0 if isValidInvoice is false),
+      "confidence": number (your confidence score from 0 to 100, float),
+      "category": "Must be exactly one of: Food, Shopping, Travel, Medical, Utilities, Entertainment, Subscriptions, Education (Shopping if isValidInvoice is false)",
+      "items": [
         {
-          "isValidInvoice": boolean (set true if it is a valid receipt, bill, or invoice showing commercial exchange; set false otherwise),
-          "validationError": "A friendly, professional, actionable error message explaining why the document is not an invoice and what the requisites are (e.g. 'The uploaded document appears to be a generic photo of a landscape. FinanceLens AI requires a clearly legible receipt, bill, or SaaS statement displaying a merchant name, billing date, and transaction totals.') if isValidInvoice is false; otherwise null",
-          "merchant": "Exact Name of the business/merchant (empty if isValidInvoice is false)",
-          "date": "YYYY-MM-DD format (if only year/month is clear, approximate or extract as is, empty if isValidInvoice is false)",
-          "invoiceNumber": "The invoice or receipt number (empty if isValidInvoice is false)",
-          "amount": number (Total invoice value, float, 0 if isValidInvoice is false),
-          "currency": "3-letter currency code, default INR",
-          "tax": number (Total tax amount, float. If none, extract 0, 0 if isValidInvoice is false),
-          "confidence": number (your confidence score from 0 to 100, float),
-          "category": "Must be exactly one of: Food, Shopping, Travel, Medical, Utilities, Entertainment, Subscriptions, Education (Shopping if isValidInvoice is false)",
-          "items": [
-            {
-              "name": "Line item name",
-              "quantity": number,
-              "price": number,
-              "total": number
-            }
-          ],
-          "anomalyDetected": boolean (set true if tax doesn't align with amount, if values seem suspicious, or if amount is abnormally large),
-          "anomalyDescription": "Description of anomaly if detected",
-          "isSubscription": boolean (set true if this appears to be a monthly recurring subscription, e.g. SaaS platforms, cloud tools, utility contracts),
-          "analysis": "A detailed, structured, professional financial audit and spending analysis of the invoice text. This must include: 1) Tax verification (e.g. verifying subtotal, CGST, SGST, VAT percentages and checking for arithmetic alignment), 2) Savings and cost-optimization recommendations for the itemized items (e.g. switching suppliers, negotiating corporate terms, or moving standard packages), and 3) Compliance and categorization review (e.g. corporate expense alignment and tracking suggestions)."
+          "name": "Line item name",
+          "quantity": number,
+          "price": number,
+          "total": number
         }
+      ],
+      "anomalyDetected": boolean (set true if tax doesn't align with amount, if values seem suspicious, or if amount is abnormally large),
+      "anomalyDescription": "Description of anomaly if detected",
+      "isSubscription": boolean (set true if this appears to be a monthly recurring subscription, e.g. SaaS platforms, cloud tools, utility contracts)
+    }
 
-        Only return a valid, raw JSON object. Do not wrap it in markdown formatting or include \`\`\`json. Just the raw parsable JSON matching the schema precisely.
-      `;
+    Only return a valid, raw JSON object. Do not wrap it in markdown formatting or include \`\`\`json. Just the raw parsable JSON matching the schema precisely.
+  `;
 
-      let modelToUse = 'llama-3.3-70b-versatile';
-      let messages: any[] = [];
+  let extractedText = '';
 
-      if (fileBuffer && fileType) {
-        if (fileType === 'application/pdf') {
-          // Parse PDF using pdf-parse package
-          const parsed = await pdf(fileBuffer);
-          const extractedText = parsed.text || '';
-          messages = [
-            {
-              role: 'user',
-              content: `${prompt}\n\nHere is the raw text content parsed from the PDF invoice:\n\n${extractedText}`
-            }
-          ];
-        } else if (fileType.startsWith('image/')) {
-          // Perform local OCR on image using Tesseract.js character scanner
-          console.log(`[OCR Layer] Scanning image for characters: ${fileName}`);
-          const ocrResult = await Tesseract.recognize(fileBuffer, 'eng');
-          const extractedText = ocrResult.data.text || '';
-          console.log(`[OCR Layer] Scan completed. Extracted ${extractedText.length} characters.`);
-          
-          messages = [
-            {
-              role: 'user',
-              content: `${prompt}\n\nHere is the raw text content extracted via OCR from the image invoice:\n\n${extractedText}`
-            }
-          ];
-        }
+  // 1. Perform OCR extraction
+  if (fileBuffer && fileType) {
+    if (fileType === 'application/pdf') {
+      try {
+        console.log('FinanceLens OCR: Parsing PDF text locally...');
+        const parser = new pdf.PDFParse({ data: fileBuffer });
+        const parsed = await parser.getText();
+        extractedText = parsed?.text || '';
+        await parser.destroy();
+        console.log(`FinanceLens OCR: Local PDF parse extracted ${extractedText.length} characters.`);
+      } catch (err: any) {
+        console.error("Local PDF parsing failed, falling back to OCR.space:", err.message || err);
       }
+    }
 
-      if (messages.length === 0) {
-        // Fallback text reasoning based on filename
-        messages = [
-          {
-            role: 'user',
-            content: `${prompt}\n\nFilename: ${fileName}`
-          }
-        ];
+    // If PDF parsing extracted no text (e.g. scanned PDF) or we have an image
+    if (!extractedText || extractedText.trim().length < 50) {
+      try {
+        console.log('FinanceLens OCR: Requesting text scan from OCR.space API...');
+        const ocrType = fileType || (fileName.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
+        extractedText = await performOcrSpace(fileBuffer, fileName, ocrType);
+      } catch (err: any) {
+        console.error("OCR.space API parsing failed:", err.message || err);
       }
-
-      const responseText = await queryGroq(messages, modelToUse, true);
-      const cleanJsonStr = responseText.trim();
-      const extracted: ExtractedInvoice = JSON.parse(cleanJsonStr);
-
-      // Sanitize items just in case
-      if (extracted.items && Array.isArray(extracted.items)) {
-        extracted.items = extracted.items.map(item => ({
-          name: item.name || 'Line Item',
-          quantity: typeof item.quantity === 'number' ? item.quantity : 1,
-          price: typeof item.price === 'number' ? item.price : 0,
-          total: typeof item.total === 'number' ? item.total : 0
-        }));
-      }
-
-      return extracted;
-    } catch (error) {
-      console.error('Groq OCR extraction failed, falling back to high-fidelity engine:', error);
     }
   }
 
-  // In Mock Mode, sleep for 2.5 seconds to simulate high-stakes AI OCR pipeline processing
+  const promptText = `
+    ${prompt}
+    
+    Here is the raw extracted text of the document:
+    ---------------------------------------------
+    ${extractedText || `(No text extracted. Filename: ${fileName})`}
+    ---------------------------------------------
+  `;
+
+  // 2. Google Gemini Mode (Primary fallback as per README design)
+  if (GEMINI_API_KEY) {
+    try {
+      console.log('FinanceLens AI Engine: Initializing Google Gemini analysis pipeline...');
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({
+        model: 'gemini-2.5-flash',
+        generationConfig: { responseMimeType: 'application/json' }
+      });
+
+      const result = await model.generateContent(promptText);
+      const responseText = result.response.text();
+      const cleanStr = cleanJsonString(responseText);
+      const parsed = JSON.parse(cleanStr);
+      parsed.extractedText = extractedText; // Include raw text in result
+      return sanitizeExtractedInvoice(parsed, fileName);
+    } catch (error: any) {
+      console.error('Gemini analysis failed, falling back to Groq / Mock:', error.message || error);
+    }
+  }
+
+  // 3. Groq Mode
+  if (GROQ_API_KEY) {
+    try {
+      console.log('FinanceLens AI Engine: Initializing Groq Llama 3.3 analysis pipeline...');
+      const messages = [
+        {
+          role: 'user',
+          content: promptText
+        }
+      ];
+
+      const responseText = await queryGroq(messages, 'llama-3.3-70b-versatile', true);
+      const cleanStr = cleanJsonString(responseText);
+      const parsed = JSON.parse(cleanStr);
+      parsed.extractedText = extractedText; // Include raw text in result
+      return sanitizeExtractedInvoice(parsed, fileName);
+    } catch (error: any) {
+      console.error('Groq analysis failed, falling back to high-fidelity engine:', error.message || error);
+    }
+  }
+
+  // 4. Stateful Local Sandbox Mock Engine
+  console.warn('FinanceLens AI Engine: API credentials missing or failed, initializing high-fidelity local engine...');
   await new Promise((resolve) => setTimeout(resolve, 2500));
-  return generateHighFidelityMockInvoice(fileName, fileBuffer);
+  const mockInvoice = generateHighFidelityMockInvoice(fileName, fileBuffer);
+  mockInvoice.extractedText = mockInvoice.isValidInvoice 
+    ? `INVOICE / STATEMENT\nMerchant: ${mockInvoice.merchant}\nInvoice No: ${mockInvoice.invoiceNumber}\nDate: ${mockInvoice.date}\nAmount: ${mockInvoice.amount}\nCategory: ${mockInvoice.category}\n`
+    : `UNRELATED DOCUMENT PHOTO / SKETCH\nNo financial data found.\n`;
+  return mockInvoice;
 }
+
 
 /**
  * Service: Generate automated AI summary and recommendations
@@ -538,26 +714,60 @@ export async function getAdvisorChatResponse(query: string, invoices: any[], cha
   const q = query.toLowerCase().trim();
   const totalSpend = invoices.reduce((sum, inv) => sum + (inv.ocrResult?.amount || 0), 0);
   
+  const invoiceSummaries = invoices.map(inv => {
+    return `- Invoice ${inv.ocrResult?.invoiceNumber} from ${inv.ocrResult?.merchant} on ${inv.ocrResult?.date}: ₹${inv.ocrResult?.amount} (${inv.ocrResult?.category})`;
+  }).join('\n');
+
+  const systemContext = `
+    You are "Zen AI Analyst", a premium, friendly, yet highly analytical financial advisor embedded inside the FinanceLens AI SaaS platform.
+    You have direct visibility into the user's uploaded invoices and expenses:
+    Total Spend Audited: ₹${totalSpend}
+    
+    List of Invoices:
+    ${invoiceSummaries}
+
+    Answer the user's financial questions with exceptional clarity, precision, and professional financial counsel.
+    Feel free to highlight anomalies, duplicate charges, or specific optimization opportunities.
+    Keep your advice highly actionable and structured. Use lists, bullet points, and highlight metrics if possible.
+    Keep your response moderately concise (under 250 words) and premium.
+  `;
+
+  // 1. Google Gemini Chat Mode
+  if (GEMINI_API_KEY) {
+    try {
+      console.log('FinanceLens AI Chat: Initializing Google Gemini advisor conversation...');
+      const genAI = new GoogleGenerativeAI(GEMINI_API_KEY);
+      const model = genAI.getGenerativeModel({ model: 'gemini-2.5-flash' });
+      
+      const contents = [
+        { role: 'user', parts: [{ text: systemContext }] },
+        ...chatHistory.map(ch => ({
+          role: ch.role === 'assistant' ? 'model' : 'user',
+          parts: [{ text: ch.content }]
+        })),
+        { role: 'user', parts: [{ text: query }] }
+      ];
+
+      const result = await model.generateContent({ contents });
+      const responseText = result.response.text();
+      
+      return {
+        message: responseText.trim(),
+        suggestedPrompts: [
+          'How to increase my savings buffer?',
+          'Audit my recurring subscriptions',
+          'Explain the anomalies detected'
+        ]
+      };
+    } catch (e: any) {
+      console.error('Gemini Chat failed, falling back to Groq / Mock:', e.message || e);
+    }
+  }
+
+  // 2. Groq Chat Mode
   if (GROQ_API_KEY) {
     try {
-      const invoiceSummaries = invoices.map(inv => {
-        return `- Invoice ${inv.ocrResult?.invoiceNumber} from ${inv.ocrResult?.merchant} on ${inv.ocrResult?.date}: ₹${inv.ocrResult?.amount} (${inv.ocrResult?.category})`;
-      }).join('\n');
-
-      const systemContext = `
-        You are "Zen AI Analyst", a premium, friendly, yet highly analytical financial advisor embedded inside the FinanceLens AI SaaS platform.
-        You have direct visibility into the user's uploaded invoices and expenses:
-        Total Spend Audited: ₹${totalSpend}
-        
-        List of Invoices:
-        ${invoiceSummaries}
-
-        Answer the user's financial questions with exceptional clarity, precision, and professional financial counsel.
-        Feel free to highlight anomalies, duplicate charges, or specific optimization opportunities.
-        Keep your advice highly actionable and structured. Use lists, bullet points, and highlight metrics if possible.
-        Keep your response moderately concise (under 250 words) and premium.
-      `;
-
+      console.log('FinanceLens AI Chat: Initializing Groq advisor conversation...');
       const groqHistory = [
         {
           role: 'system',
@@ -583,8 +793,8 @@ export async function getAdvisorChatResponse(query: string, invoices: any[], cha
           'Explain the anomalies detected'
         ]
       };
-    } catch (e) {
-      console.error('Groq Chat failed, running mock response:', e);
+    } catch (e: any) {
+      console.error('Groq Chat failed, running mock response:', e.message || e);
     }
   }
 
