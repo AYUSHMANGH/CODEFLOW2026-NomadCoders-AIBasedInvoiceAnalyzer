@@ -342,11 +342,13 @@ export const getDashboardStats = async (req: Request, res: Response) => {
   const currentMonthName = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'][currentMonth];
   const daysInMonth = new Date(currentYear, currentMonth + 1, 0).getDate();
   const weekBoundaries = [7, 14, 21, daysInMonth];
+  const todayDay = new Date().getDate();
+  const lastWeekLabel = todayDay > 22 ? `${todayDay.toString().padStart(2, '0')} ${currentMonthName}` : `22 ${currentMonthName}`;
   const weekLabels = [
     `01 ${currentMonthName}`,
     `08 ${currentMonthName}`,
     `15 ${currentMonthName}`,
-    `22 ${currentMonthName}`
+    lastWeekLabel
   ];
 
   const monthlySpendData = weekLabels.map((label, idx) => {
