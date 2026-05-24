@@ -271,12 +271,12 @@ export const Dashboard: React.FC = () => {
               <table className="w-full text-left text-xs border-collapse">
                 <thead>
                   <tr className="border-b border-[#1E293B] text-[10px] text-slate-500 font-mono uppercase tracking-wider">
-                    <th className="pb-3 font-medium">Invoice ID</th>
+                    <th className="pb-3 font-medium hidden sm:table-cell">Invoice ID</th>
                     <th className="pb-3 font-medium">Vendor</th>
-                    <th className="pb-3 font-medium">Category</th>
+                    <th className="pb-3 font-medium hidden md:table-cell">Category</th>
                     <th className="pb-3 font-medium">Amount</th>
-                    <th className="pb-3 font-medium">Date</th>
-                    <th className="pb-3 font-medium">Status</th>
+                    <th className="pb-3 font-medium hidden sm:table-cell">Date</th>
+                    <th className="pb-3 font-medium hidden sm:table-cell">Status</th>
                     <th className="pb-3 font-medium text-right">AI Audit</th>
                   </tr>
                 </thead>
@@ -287,7 +287,7 @@ export const Dashboard: React.FC = () => {
                       onClick={() => navigate(`/invoices/${inv.id}`)}
                       className="hover:bg-glass-shine transition-colors duration-200 cursor-pointer group"
                     >
-                      <td className="py-4.5 font-mono text-slate-300 group-hover:text-cyan">{inv.ocrResult?.invoiceNumber || 'INV-PENDING'}</td>
+                      <td className="py-4.5 font-mono text-slate-300 group-hover:text-cyan hidden sm:table-cell">{inv.ocrResult?.invoiceNumber || 'INV-PENDING'}</td>
                       <td className="py-4.5 font-bold text-white relative">
                         <div className="flex items-center gap-1.5">
                           {inv.ocrResult?.merchant || 'Parsing details...'}
@@ -296,7 +296,7 @@ export const Dashboard: React.FC = () => {
                           )}
                         </div>
                       </td>
-                      <td className="py-4.5">
+                      <td className="py-4.5 hidden md:table-cell">
                         <span className="px-2 py-0.5 rounded-full bg-glass-bg border border-glass-border text-slate-300 font-semibold text-[10px]">
                           {inv.ocrResult?.category || 'Extracting'}
                         </span>
@@ -304,8 +304,8 @@ export const Dashboard: React.FC = () => {
                       <td className="py-4.5 font-mono font-bold text-white">
                         {inv.ocrResult ? `₹${(inv.ocrResult.amount ?? 0).toFixed(2)}` : '--'}
                       </td>
-                      <td className="py-4.5 text-slate-400 font-mono">{inv.ocrResult?.date || inv.uploadedAt.split('T')[0]}</td>
-                      <td className="py-4.5">
+                      <td className="py-4.5 text-slate-400 font-mono hidden sm:table-cell">{inv.ocrResult?.date || inv.uploadedAt.split('T')[0]}</td>
+                      <td className="py-4.5 hidden sm:table-cell">
                         <span
                           className={`
                             px-2 py-0.5 rounded-full font-mono text-[9px] font-bold uppercase tracking-wider inline-block

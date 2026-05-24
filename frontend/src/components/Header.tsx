@@ -1,10 +1,14 @@
 import React, { useState } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { useApp } from '../context/AppContext';
-import { Search, Bell, HelpCircle, AlertCircle, Wifi, WifiOff } from 'lucide-react';
+import { Search, Bell, HelpCircle, AlertCircle, Wifi, WifiOff, Menu } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-export const Header: React.FC = () => {
+interface HeaderProps {
+  onMenuClick?: () => void;
+}
+
+export const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { user } = useAuth();
   const { serverOffline, invoices } = useApp();
   const navigate = useNavigate();
@@ -17,32 +21,43 @@ export const Header: React.FC = () => {
   if (!user) return null;
 
   return (
-    <header className="h-20 border-b border-[#1E293B] px-8 flex items-center justify-between bg-[#0B1020]/80 backdrop-blur-md sticky top-0 z-10">
-      {/* Search Input Bar */}
-      <div className="relative w-96 max-w-full">
-        <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-          <Search className="h-4.5 w-4.5 text-slate-500" />
-        </span>
-        <input
-          type="text"
-          placeholder="Search invoices, merchants, or patterns..."
-          className="w-full pl-10 pr-4 py-2 bg-glass-bg border border-glass-border rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300"
-        />
+    <header className="h-20 border-b border-[#1E293B] px-4 md:px-8 flex items-center justify-between bg-[#0B1020]/80 backdrop-blur-md sticky top-0 z-10">
+      <div className="flex items-center flex-1 md:flex-none">
+        {/* Hamburger menu for mobile */}
+        <button
+          onClick={onMenuClick}
+          className="lg:hidden text-slate-400 hover:text-white mr-3 cursor-pointer p-1 rounded-lg hover:bg-glass-bg transition-colors"
+          aria-label="Toggle Navigation Menu"
+        >
+          <Menu className="w-6 h-6" />
+        </button>
+
+        {/* Search Input Bar */}
+        <div className="relative w-64 lg:w-96 max-w-full hidden md:block">
+          <span className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-4.5 w-4.5 text-slate-500" />
+          </span>
+          <input
+            type="text"
+            placeholder="Search invoices, merchants, or patterns..."
+            className="w-full pl-10 pr-4 py-2 bg-glass-bg border border-glass-border rounded-xl text-sm text-slate-200 placeholder-slate-500 focus:outline-none focus:border-cyan focus:ring-1 focus:ring-cyan/35 transition-all duration-300"
+          />
+        </div>
       </div>
 
       {/* Right Toolbar Actions */}
-      <div className="flex items-center gap-5">
+      <div className="flex items-center gap-3.5 sm:gap-5">
         {/* Connection status badge */}
-        <div className="flex items-center gap-2 px-3 py-1 bg-glass-bg border border-glass-border rounded-full">
+        <div className="flex items-center gap-2 px-2.5 py-1 sm:px-3 bg-glass-bg border border-glass-border rounded-full">
           {serverOffline ? (
             <>
               <WifiOff className="w-3.5 h-3.5 text-warning" />
-              <span className="text-[10px] text-warning font-semibold font-mono">SANDBOX</span>
+              <span className="text-[10px] text-warning font-semibold font-mono hidden sm:inline">SANDBOX</span>
             </>
           ) : (
             <>
               <Wifi className="w-3.5 h-3.5 text-success" />
-              <span className="text-[10px] text-success font-semibold font-mono">CLOUD LIVE</span>
+              <span className="text-[10px] text-success font-semibold font-mono hidden sm:inline">CLOUD LIVE</span>
             </>
           )}
         </div>

@@ -454,42 +454,55 @@ export const InvoiceDetails: React.FC = () => {
 
                   <div className="flex flex-col gap-2.5 max-h-60 overflow-y-auto pr-1">
                     {fields.map((field, idx) => (
-                      <div key={field.id} className="grid grid-cols-12 gap-2 bg-[#051424] border border-[#1E293B] p-2 rounded-xl items-center">
-                        <div className="col-span-5">
+                      <div key={field.id} className="flex flex-col sm:grid sm:grid-cols-12 gap-2 bg-[#051424] border border-[#1E293B] p-3.5 sm:p-2 rounded-xl items-center text-left">
+                        <div className="w-full sm:col-span-5">
+                          <label className="sm:hidden text-[9px] font-mono text-slate-500 uppercase tracking-wider block mb-1">Item Description</label>
                           <input
                             type="text"
                             placeholder="Item description"
                             {...register(`items.${idx}.name` as const)}
-                            className="w-full bg-transparent border-none p-1 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-cyan/20 rounded"
+                            className="w-full bg-[#030912]/80 sm:bg-transparent border border-[#1E293B] sm:border-none p-2 sm:p-1 text-[11px] text-white focus:outline-none focus:ring-1 focus:ring-cyan/20 rounded"
                           />
                         </div>
-                        <div className="col-span-2">
-                          <input
-                            type="number"
-                            placeholder="Qty"
-                            {...register(`items.${idx}.quantity` as const, { valueAsNumber: true })}
-                            className="w-full bg-transparent border-none p-1 text-[11px] font-mono text-slate-300 text-center focus:outline-none focus:ring-1 focus:ring-cyan/20 rounded"
-                          />
+                        
+                        <div className="flex items-center gap-2 w-full sm:col-span-6 justify-between mt-2.5 sm:mt-0">
+                          <div className="flex-1 sm:w-auto">
+                            <label className="sm:hidden text-[9px] font-mono text-slate-500 uppercase tracking-wider block mb-1">Qty</label>
+                            <input
+                              type="number"
+                              placeholder="Qty"
+                              {...register(`items.${idx}.quantity` as const, { valueAsNumber: true })}
+                              className="w-full bg-[#030912]/80 sm:bg-transparent border border-[#1E293B] sm:border-none p-2 sm:p-1 text-[11px] font-mono text-slate-300 text-center focus:outline-none focus:ring-1 focus:ring-cyan/20 rounded"
+                            />
+                          </div>
+                          
+                          <div className="flex-1 sm:w-auto">
+                            <label className="sm:hidden text-[9px] font-mono text-slate-500 uppercase tracking-wider block mb-1">Price</label>
+                            <input
+                              type="number"
+                              step="0.01"
+                              placeholder="Price"
+                              {...register(`items.${idx}.price` as const, { valueAsNumber: true })}
+                              className="w-full bg-[#030912]/80 sm:bg-transparent border border-[#1E293B] sm:border-none p-2 sm:p-1 text-[11px] font-mono text-slate-300 text-center focus:outline-none focus:ring-1 focus:ring-cyan/20 rounded"
+                            />
+                          </div>
+                          
+                          <div className="flex-1 sm:w-auto text-center">
+                            <label className="sm:hidden text-[9px] font-mono text-slate-500 uppercase tracking-wider block mb-1">Subtotal</label>
+                            <span className="font-mono text-[11px] text-white font-bold block sm:inline py-1.5 sm:py-0">
+                              ₹{(watch(`items.${idx}.quantity`) * watch(`items.${idx}.price`) || 0).toFixed(2)}
+                            </span>
+                          </div>
                         </div>
-                        <div className="col-span-2">
-                          <input
-                            type="number"
-                            step="0.01"
-                            placeholder="Price"
-                            {...register(`items.${idx}.price` as const, { valueAsNumber: true })}
-                            className="w-full bg-transparent border-none p-1 text-[11px] font-mono text-slate-300 text-center focus:outline-none focus:ring-1 focus:ring-cyan/20 rounded"
-                          />
-                        </div>
-                        <div className="col-span-2 font-mono text-[11px] text-white font-bold text-center">
-                          ₹{(watch(`items.${idx}.quantity`) * watch(`items.${idx}.price`) || 0).toFixed(2)}
-                        </div>
-                        <div className="col-span-1 text-right">
+                        
+                        <div className="w-full sm:col-span-1 text-right mt-2 sm:mt-0 border-t border-[#1E293B]/60 sm:border-none pt-2 sm:pt-0">
                           <button
                             type="button"
                             onClick={() => remove(idx)}
-                            className="text-rose-500 hover:text-rose-400 p-1"
+                            className="w-full sm:w-auto text-rose-500 hover:text-rose-400 p-1.5 sm:p-1 font-bold text-center text-xs sm:text-base flex justify-center items-center gap-1 cursor-pointer bg-rose-500/10 sm:bg-transparent border border-rose-500/20 sm:border-none rounded-lg sm:rounded-none"
                           >
-                            ×
+                            <span className="sm:hidden text-[10px] uppercase font-mono tracking-wider font-bold">Remove Item Line</span>
+                            <span>×</span>
                           </button>
                         </div>
                       </div>

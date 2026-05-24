@@ -193,7 +193,7 @@ export const Advisor: React.FC = () => {
         {/* Dynamic Two-Column Layout */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch flex-1">
           {/* LEFT COLUMN: Conversational Chat UI - Matches 2.png */}
-          <div className="lg:col-span-8 flex flex-col justify-between bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-5 h-[650px] relative">
+          <div className="lg:col-span-8 flex flex-col justify-between bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-5 h-[500px] sm:h-[600px] lg:h-[650px] relative">
             {/* Shimmer line if loading */}
             {loading && <div className="absolute top-0 left-0 w-full h-1 glass-shimmer" />}
 
@@ -291,7 +291,7 @@ export const Advisor: React.FC = () => {
           </div>
 
           {/* RIGHT COLUMN: Scenario Simulator - Matches 2.png right side */}
-          <div className="lg:col-span-4 flex flex-col justify-between bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-5 h-[650px]">
+          <div className="lg:col-span-4 flex flex-col justify-between bg-[#0F172A] border border-[#1E293B] rounded-[24px] p-5 h-fit lg:h-[650px]">
             <div>
               <h4 className="text-xs font-bold text-white tracking-wide font-mono border-b border-[#1E293B] pb-3 mb-4">
                 Scenario Simulator

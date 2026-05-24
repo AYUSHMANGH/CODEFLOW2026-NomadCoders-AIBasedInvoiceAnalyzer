@@ -133,11 +133,11 @@ export const Expenses: React.FC = () => {
             <table className="w-full text-left text-xs border-collapse">
               <thead>
                 <tr className="border-b border-[#1E293B] text-[10px] text-slate-500 font-mono uppercase tracking-wider">
-                  <th className="pb-3 font-medium">Date</th>
+                  <th className="pb-3 font-medium hidden sm:table-cell">Date</th>
                   <th className="pb-3 font-medium">Merchant</th>
                   <th className="pb-3 font-medium">Amount</th>
-                  <th className="pb-3 font-medium">Tax</th>
-                  <th className="pb-3 font-medium">Category</th>
+                  <th className="pb-3 font-medium hidden md:table-cell">Tax</th>
+                  <th className="pb-3 font-medium hidden sm:table-cell">Category</th>
                   <th className="pb-3 font-medium">Status</th>
                   <th className="pb-3 font-medium text-right">Actions</th>
                 </tr>
@@ -150,7 +150,7 @@ export const Expenses: React.FC = () => {
                       onClick={() => navigate(`/invoices/${inv.id}`)}
                       className="hover:bg-glass-shine transition-colors duration-150 cursor-pointer"
                     >
-                      <td className="py-4 font-mono text-slate-400">{inv.ocrResult?.date || inv.uploadedAt.split('T')[0]}</td>
+                      <td className="py-4 font-mono text-slate-400 hidden sm:table-cell">{inv.ocrResult?.date || inv.uploadedAt.split('T')[0]}</td>
                       <td className="py-4 font-bold text-white relative">
                         <div className="flex items-center gap-2">
                           {inv.ocrResult?.merchant || inv.fileName}
@@ -162,10 +162,10 @@ export const Expenses: React.FC = () => {
                       <td className="py-4 font-mono font-bold text-cyan-glow">
                         {inv.ocrResult ? `₹${(inv.ocrResult.amount ?? 0).toFixed(2)}` : '--'}
                       </td>
-                      <td className="py-4 font-mono text-slate-400">
+                      <td className="py-4 font-mono text-slate-400 hidden md:table-cell">
                         {inv.ocrResult ? `₹${(inv.ocrResult.tax ?? 0).toFixed(2)}` : '--'}
                       </td>
-                      <td className="py-4">
+                      <td className="py-4 hidden sm:table-cell">
                         {inv.ocrResult ? (
                           <span className="px-2.5 py-0.5 rounded-full bg-glass-bg border border-glass-border text-slate-300 font-semibold text-[10px]">
                             {inv.ocrResult.category}
