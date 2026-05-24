@@ -701,18 +701,73 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (serverOffline) {
       // Direct local simulation chatbot
       await new Promise(resolve => setTimeout(resolve, 1000));
-      const q = message.toLowerCase();
-      let response = `I've analyzed your invoices state (Total spend: $${dashboardStats?.totalSpend}). `;
+      const q = message.toLowerCase().trim();
+      const totalSpend = invoices.reduce((sum, inv) => sum + (inv.ocrResult?.amount || 0), 0);
+      
+      let response = `I've analyzed your **FinanceLens AI Workspace** (Total spend audited: **₹${totalSpend.toFixed(2)}** across **${invoices.length} invoices**). `;
       let suggestedPrompts = ['Where am I overspending?', 'How to save?', 'Monthly summary'];
 
-      if (q.includes('overspend') || q.includes('leak') || q.includes('spend')) {
-        response += `Spending analysis highlights **AWS** cloud hosting utilities and **Delta Air Lines** travel costs as major concentrations. Ensure idle compute capacities are terminated.`;
-        suggestedPrompts = ['Explain the Delta Air Lines anomaly', 'Optimize cloud pricing'];
-      } else if (q.includes('save') || q.includes('optimize') || q.includes('figma')) {
-        response += `Audits indicate 3 unused seats in **Figma Inc.** De-provision seats immediately for a recurring yield of **+$840/year**.`;
-        suggestedPrompts = ['Open Scenario Simulator', 'Audit my recurring subscriptions'];
+      const isBadInvestmentOrOverspend = q.includes('overspend') || q.includes('leak') || q.includes('spend') || q.includes('bad') || q.includes('investment') || q.includes('waste');
+      const isSaveOrOptimize = q.includes('save') || q.includes('optimize') || q.includes('recommend') || q.includes('how much') || q.includes('how to save') || q.includes('saving');
+      const isSummary = q.includes('summary') || q.includes('monthly') || q.includes('report') || q.includes('health') || q.includes('index');
+
+      const completedInvoices = invoices.filter(inv => inv.status === 'completed' && inv.ocrResult);
+      const anomalies = completedInvoices.filter(inv => inv.ocrResult?.anomalyDetected);
+      const subs = completedInvoices.filter(inv => inv.ocrResult?.isSubscription);
+      const highestSpend = completedInvoices.length > 0 ? [...completedInvoices].sort((a, b) => (b.ocrResult?.amount || 0) - (a.ocrResult?.amount || 0))[0] : null;
+
+      if (isBadInvestmentOrOverspend) {
+        if (completedInvoices.length > 0) {
+          response += `\n\nHere is a live audit of your risk factors and low-yield outlays:\n`;
+          if (anomalies.length > 0) {
+            response += `*   ⚠️ **Flagged Anomalies (${anomalies.length})**: We detected high-risk items. Most notably, the invoice from **${anomalies[0].ocrResult?.merchant}** (₹${anomalies[0].ocrResult?.amount.toFixed(2)}) is flagged: *"${anomalies[0].ocrResult?.anomalyDescription || 'Potential duplication / pricing mismatch'}"*.\n`;
+          } else {
+            response += `*   ✅ **Anomalies**: Good news! No explicit fraudulent or duplicate invoices have been flagged by the AI scanner so far.\n`;
+          }
+          
+          if (subs.length > 0) {
+            response += `*   🔄 **Recurring SaaS Licenses**: You have active subscriptions with **${subs[0].ocrResult?.merchant}** (₹${subs[0].ocrResult?.amount.toFixed(2)}) and others. If these licenses are underutilized, they represent a recurring operational leak.\n`;
+          }
+
+          if (highestSpend) {
+            response += `*   📉 **Highest Single Investment**: A payment of **₹${highestSpend.ocrResult?.amount.toFixed(2)}** to **${highestSpend.ocrResult?.merchant}** was processed. Let's verify if the deliverables align with corporate yield expectations.\n`;
+          }
+          
+          response += `\n**Zen Action Recommendation**: I recommend auditing the recurring seat counts and reviewing the flagged invoice from **${anomalies[0]?.ocrResult?.merchant || 'your travel partners'}** to claim potential refund credits.`;
+          suggestedPrompts = ['How to save on these?', 'Explain my highest spend item', 'Audit recurring subscriptions'];
+        } else {
+          response += `\n\nSpending analysis highlights **AWS** cloud hosting utilities and **Delta Air Lines** travel costs as major concentrations. Ensure idle compute capacities are terminated.`;
+          suggestedPrompts = ['Explain the Delta Air Lines anomaly', 'Optimize cloud pricing'];
+        }
+      } else if (isSaveOrOptimize) {
+        if (completedInvoices.length > 0) {
+          const immediateSavings = (totalSpend * 0.15);
+          response += `\n\nHere is your custom **Savings Blueprint** compiled from your active receipts:\n`;
+          response += `1.  **Immediate Optimization Target**: Moving standard service categories to contracted vendors will yield an estimated **₹${immediateSavings.toFixed(2)}** in annual savings (15% yield target).\n`;
+          
+          if (subs.length > 0) {
+            const subSavings = subs.reduce((sum, s) => sum + (s.ocrResult?.amount || 0) * 0.2, 0);
+            response += `2.  **SaaS License Pruning**: Consolidating recurring profiles for **${subs[0].ocrResult?.merchant}** and converting monthly billing cycles to annual contracts will save up to **20%** (approx. **₹${subSavings.toFixed(2)}/year**).\n`;
+          } else {
+            response += `2.  **Establish Savings Buffer**: We recommend routing 10% of cash reserves to secure corporate liquidity pools.\n`;
+          }
+
+          response += `3.  **Anomalous Invoice Refunds**: Settling the flagged anomalies or duplicate entries could immediately return capital straight to your balance sheet.\n\nWould you like to load these parameters into the **Scenario Simulator** in the right-hand panel to calculate Q4 yields?`;
+          suggestedPrompts = ['Open Scenario Simulator', 'Audit my recurring subscriptions', 'What is my budget score?'];
+        } else {
+          response += `\n\nAudits indicate 3 unused seats in **Figma Inc.** De-provision seats immediately for a recurring yield of **+₹840/year**.`;
+          suggestedPrompts = ['Open Scenario Simulator', 'Audit my recurring subscriptions'];
+        }
+      } else if (isSummary) {
+        const budgetScore = completedInvoices.length > 0 ? (totalSpend > 5000 ? 540 : 880) : 840;
+        response += `\n\nHere is your **Executive Summary** for the current billing cycle:\n`;
+        response += `*   **Total Outflows**: ₹${totalSpend.toFixed(2)}\n`;
+        response += `*   **Audited Items**: ${invoices.length} Receipts / Invoices processed\n`;
+        response += `*   **Finance Health Index**: **${budgetScore} / 1000 (${budgetScore > 800 ? 'Optimized' : 'Stressed'} for Q3 Expansion)**\n`;
+        response += `*   **Flagged Anomalies**: ${anomalies.length} items under manual review.\n\nYour budget is in ${budgetScore > 800 ? 'strong' : 'critical'} standing. Take active control of your subscription cycles to optimize bottom-line health.`;
+        suggestedPrompts = ['Where am I overspending?', 'Run high-fidelity OCR scan', 'Export workspace data'];
       } else {
-        response += `As the **Zen AI Analyst**, I'm auditing your financial transaction pipeline. Ask me about overspending leaks or subscription optimizations.`;
+        response += `\n\nAs the **Zen AI Analyst**, I'm auditing your financial transaction pipeline. Ask me about overspending leaks, bad investments, or subscription optimizations.`;
       }
 
       return { message: response, suggestedPrompts };

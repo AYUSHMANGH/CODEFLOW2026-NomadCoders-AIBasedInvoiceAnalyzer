@@ -804,36 +804,83 @@ export async function getAdvisorChatResponse(query: string, invoices: any[], cha
   let reply = `I have analyzed your **FinanceLens AI Workspace** (Total spend audited: **₹${totalSpend.toFixed(2)}** across **${invoices.length} invoices**). `;
   let suggestedPrompts = ['Where am I overspending?', 'How to save?', 'Monthly summary'];
 
-  if (q.includes('overspend') || q.includes('leak') || q.includes('spend')) {
-    reply += `
+  // Check query intent
+  const isBadInvestmentOrOverspend = q.includes('overspend') || q.includes('leak') || q.includes('spend') || q.includes('bad') || q.includes('investment') || q.includes('waste');
+  const isSaveOrOptimize = q.includes('save') || q.includes('optimize') || q.includes('recommend') || q.includes('how much') || q.includes('how to save') || q.includes('saving');
+  const isSummary = q.includes('summary') || q.includes('monthly') || q.includes('report') || q.includes('health') || q.includes('index');
+
+  const completedInvoices = invoices.filter(inv => inv.ocrResult);
+  const anomalies = completedInvoices.filter(inv => inv.ocrResult?.anomalyDetected);
+  const subs = completedInvoices.filter(inv => inv.ocrResult?.isSubscription);
+  const highestSpend = completedInvoices.length > 0 ? [...completedInvoices].sort((a, b) => (b.ocrResult?.amount || 0) - (a.ocrResult?.amount || 0))[0] : null;
+
+  if (isBadInvestmentOrOverspend) {
+    if (completedInvoices.length > 0) {
+      reply += `\n\nHere is a live audit of your risk factors and low-yield outlays:\n`;
+      if (anomalies.length > 0) {
+        reply += `*   ⚠️ **Flagged Anomalies (${anomalies.length})**: We detected high-risk items. Most notably, the invoice from **${anomalies[0].ocrResult?.merchant}** (₹${anomalies[0].ocrResult?.amount.toFixed(2)}) is flagged: *"${anomalies[0].ocrResult?.anomalyDescription || 'Potential duplication / pricing mismatch'}"*.\n`;
+      } else {
+        reply += `*   ✅ **Anomalies**: Good news! No explicit fraudulent or duplicate invoices have been flagged by the AI scanner so far.\n`;
+      }
+      
+      if (subs.length > 0) {
+        reply += `*   🔄 **Recurring SaaS Licenses**: You have active subscriptions with **${subs[0].ocrResult?.merchant}** (₹${subs[0].ocrResult?.amount.toFixed(2)}) and others. If these licenses are underutilized, they represent a recurring operational leak.\n`;
+      }
+
+      if (highestSpend) {
+        reply += `*   📉 **Highest Single Investment**: A payment of **₹${highestSpend.ocrResult?.amount.toFixed(2)}** to **${highestSpend.ocrResult?.merchant}** was processed. Let's verify if the deliverables align with corporate yield expectations.\n`;
+      }
+      
+      reply += `\n**Zen Action Recommendation**: I recommend auditing the recurring seat counts and reviewing the flagged invoice from **${anomalies[0]?.ocrResult?.merchant || 'your travel partners'}** to claim potential refund credits.`;
+      suggestedPrompts = ['How to save on these?', 'Explain my highest spend item', 'Audit recurring subscriptions'];
+    } else {
+      reply += `
 Based on Q3 transaction logs, you are experiencing spending spikes in **Professional Services and SaaS Utilities**:
 *   **Professional Services**: Up by **22%** this quarter. This was heavily driven by recent legal retainer adjustments.
 *   **Overlapping Subscriptions**: Figma Inc. (₹120.00) and other communication suites represent a high concentration (**45%**) of your operating overhead.
 *   **Anomalies Detected**: A flagged high-value invoice of **₹850.00** from **Delta Air Lines** is currently under review for potential booking duplicates.
 
 **Recommendation**: Let's audit these 3 seats in Figma, and reprocess the Delta Air Lines invoice to verify if there was a duplicate credit.
-    `;
-    suggestedPrompts = ['Audit my recurring subscriptions', 'What is the Delta Air Lines anomaly?', 'View my monthly budget limit'];
-  } else if (q.includes('save') || q.includes('optimize') || q.includes('recommend')) {
-    reply += `
+      `;
+      suggestedPrompts = ['Audit my recurring subscriptions', 'What is the Delta Air Lines anomaly?', 'View my monthly budget limit'];
+    }
+  } else if (isSaveOrOptimize) {
+    if (completedInvoices.length > 0) {
+      const immediateSavings = (totalSpend * 0.15);
+      reply += `\n\nHere is your custom **Savings Blueprint** compiled from your active receipts:\n`;
+      reply += `1.  **Immediate Optimization Target**: Moving standard service categories to contracted vendors will yield an estimated **₹${immediateSavings.toFixed(2)}** in annual savings (15% yield target).\n`;
+      
+      if (subs.length > 0) {
+        const subSavings = subs.reduce((sum, s) => sum + (s.ocrResult?.amount || 0) * 0.2, 0);
+        reply += `2.  **SaaS License Pruning**: Consolidating recurring profiles for **${subs[0].ocrResult?.merchant}** and converting monthly billing cycles to annual contracts will save up to **20%** (approx. **₹${subSavings.toFixed(2)}/year**).\n`;
+      } else {
+        reply += `2.  **Establish Savings Buffer**: We recommend routing 10% of cash reserves to secure corporate liquidity pools.\n`;
+      }
+
+      reply += `3.  **Anomalous Invoice Refunds**: Settling the flagged anomalies or duplicate entries could immediately return capital straight to your balance sheet.\n\nWould you like to load these parameters into the **Scenario Simulator** in the right-hand panel to calculate Q4 yields?`;
+      suggestedPrompts = ['Open Scenario Simulator', 'Audit my recurring subscriptions', 'What is my budget score?'];
+    } else {
+      reply += `
 Here is a structured **Savings Blueprint** based on your current cash outflows:
 1.  **De-provision Idle Licenses**: AI analysis shows 3 seats in **Figma Inc.** are inactive. Savings: **+₹840/year**.
 2.  **Rep negotiate AWS Hosting**: Moving from on-demand S3 structures to standard reserved instances would trim cloud overhead by **12%**. Savings: **+₹178/month**.
 3.  **Consolidate Food Catering**: The Modern Kitchen catering logs show frequent small orders. Ordering monthly batch catering reduces transaction and courier fees by **15%**.
 
 Would you like to open the **Scenario Simulator** to calculate Q4 yields if these strategies are deployed?
-    `;
-    suggestedPrompts = ['Open Scenario Simulator', 'Audit my AWS expenses', 'How is the budget health calculated?'];
-  } else if (q.includes('summary') || q.includes('monthly') || q.includes('report')) {
+      `;
+      suggestedPrompts = ['Open Scenario Simulator', 'Audit my AWS expenses', 'How is the budget health calculated?'];
+    }
+  } else if (isSummary) {
+    const budgetScore = completedInvoices.length > 0 ? (totalSpend > 5000 ? 540 : 880) : 840;
     reply += `
 Here is your **Executive Summary** for the current billing cycle:
 *   **Total Outflows**: ₹${totalSpend.toFixed(2)}
 *   **Audited Items**: ${invoices.length} Receipts / Invoices processed
-*   **Finance Health Index**: **840 / 1000 (Optimized for Q3 Expansion)**
-*   **Flagged Anomalies**: 2 items under manual review.
+*   **Finance Health Index**: **${budgetScore} / 1000 (${budgetScore > 800 ? 'Optimized' : 'Stressed'} for Q3 Expansion)**
+*   **Flagged Anomalies**: ${anomalies.length} items under manual review.
 *   **Savings Potential**: ₹${(totalSpend * 0.12).toFixed(2)} (approx. 12% in operational leaks)
 
-Your budget is in strong standing. Overspending in travel and dining is currently balanced out by optimized office and hardware utility management.
+Your budget is in ${budgetScore > 800 ? 'strong' : 'critical'} standing. Take active control of your subscription cycles and cloud outlays to optimize bottom-line health.
     `;
     suggestedPrompts = ['Where am I overspending?', 'Run high-fidelity OCR scan', 'Export workspace data'];
   } else {
@@ -841,8 +888,8 @@ Your budget is in strong standing. Overspending in travel and dining is currentl
 I am the **Zen AI Analyst** at your service. I can help you audit your invoices, locate financial leakages, optimize subscriptions, or simulate savings strategies. 
 
 You can ask me questions like:
-*   *Where am I overspending?*
-*   *Show me how to save on my SaaS subscriptions.*
+*   *Where are my bad investments?*
+*   *How much can I save on my SaaS subscriptions?*
 *   *Explain my monthly expense breakdown.*
     `;
   }
